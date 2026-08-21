@@ -1,0 +1,80 @@
+# replicas is pinned at 1 and MUST stay that way: the panel stores user
+# accounts and listener stats in a local SQLite file on the PVC below.
+# SQLite has a single writer -- two pods would either fail to both mount
+# a ReadWriteOnce volume, or (on a ReadWriteMany volume) corrupt the
+# database racing each other. strategy: Recreate for the same reason --
+# a RollingUpdate briefly runs old and new pods together, which two
+# SQLite writers on the same file can't survive. If you outgrow this,
+# point db.sqlite_path at a volume-backed path is not the fix -- the fix
+# is swapping SQLite for a real server (the schema is tiny; see
+# internal/db) before scaling out.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: goradio-panel
+  namespace: goradio-panel
+  labels:
+    app: goradio-panel
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: goradio-panel
+  template:
+    metadata:
+      labels:
+        app: goradio-panel
+    spec:
+      containers:
+        - name: goradio-panel
+          image: ghcr.io/tmfksoft/goradio-panel:latest # replace with your pushed image
+          ports:
+            - name: http
+              containerPort: 8081
+          envFrom:
+            - configMapRef:
+                name: goradio-panel-config
+            - secretRef:
+                name: goradio-panel-secrets
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          # No DB/gRPC readiness distinction needed: audioclient.New
+          # verifies the admin token against the audio server at startup
+          # and the process exits immediately if that fails (see
+          # cmd/panel/main.go), so a live process has already proven
+          # connectivity -- /healthz is a fine liveness AND readiness
+          # check as-is. A slow-to-start audio server just means this
+          # pod crash-loops with backoff until it's reachable.
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true # everything the process writes (the SQLite file + its WAL/SHM) lives under /data
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: goradio-panel-data

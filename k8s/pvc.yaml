@@ -1,0 +1,15 @@
+# Holds /data: the SQLite database (user accounts + captured listener
+# stats). ReadWriteOnce because SQLite is a single-writer store -- see
+# deployment.yaml's comments on why this rules out multiple replicas.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: goradio-panel-data
+  namespace: goradio-panel
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  # storageClassName: ""   # set to match your cluster if it has no default

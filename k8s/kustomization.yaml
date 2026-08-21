@@ -1,0 +1,18 @@
+# kubectl apply -k k8s/
+#
+# secret.yaml isn't listed here -- it's gitignored (copy it from
+# secret.example.yaml first, see that file's header) so a real deployment
+# doesn't accidentally get its secrets committed. Apply it once yourself
+# before (or alongside) this:
+#   cp k8s/secret.example.yaml k8s/secret.yaml   # fill in real values
+#   kubectl apply -f k8s/secret.yaml
+#   kubectl apply -k k8s/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml

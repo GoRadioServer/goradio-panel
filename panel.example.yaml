@@ -1,0 +1,49 @@
+# Default filename: panel.yaml. Override with `panel --config <path>`.
+
+http:
+  listen_addr: "0.0.0.0:8081"
+
+audioserver:
+  # A bare "host:port" (plaintext, e.g. "localhost:9090") or a URL with
+  # an "https://"/"grpcs://" scheme (TLS -- for a server sitting behind a
+  # TLS-terminating reverse proxy) or "http://"/"grpc://" (plaintext).
+  grpc_addr: "localhost:9090"
+  # The audio server's own public HTTP base (its http.public_base_url) --
+  # a separate endpoint from grpc_addr, used only to build "listen" URLs
+  # for the panel's UI (GET {http_base_url}/stream/{slug} -- the audio
+  # server always serves a station's stream at that fixed path). Include
+  # any path prefix a reverse proxy in front of it needs (e.g.
+  # "https://example.com/radio"). Leave unset to hide the player.
+  http_base_url: "http://localhost:8080"
+  # Must match the audio server's own auth.jwt_secret. Can also be supplied
+  # via the GORADIO_JWT_SECRET environment variable (the same var name
+  # gta-radio-golang itself uses for the identical value), which takes
+  # precedence over this value.
+  jwt_secret: "CHANGE_ME"
+  # How often the panel re-mints its own admin service token
+  # (slugs: ["*"], read_only: false) used for every gRPC call it makes.
+  admin_token_ttl: "1h"
+
+auth:
+  # HS256 secret for the panel's OWN session JWTs (human logins).
+  # Deliberately separate from audioserver.jwt_secret -- different trust
+  # boundary. Can also be supplied via PANEL_SESSION_JWT_SECRET.
+  session_jwt_secret: "CHANGE_ME"
+  session_ttl: "24h"
+  sse_token_ttl: "60s"
+
+db:
+  sqlite_path: "./data/panel.db"
+
+bootstrap_admin:
+  # Created only if the users table is empty at startup. Overridable via
+  # PANEL_BOOTSTRAP_USERNAME / PANEL_BOOTSTRAP_PASSWORD.
+  username: "admin"
+  password: "CHANGE_ME"
+
+stats:
+  station_discovery_interval: "30s" # how often to re-poll ListStations
+  fallback_snapshot_interval: "5m" # periodic listener_count row even if no event fires
+
+logging:
+  level: "info" # debug|info|warn|error

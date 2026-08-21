@@ -1,0 +1,20 @@
+# Non-secret configuration. See internal/config's applyEnvOverrides (and
+# docker/panel.docker.yaml, the image's baked-in default config) for the
+# full set of env vars this image understands.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: goradio-panel-config
+  namespace: goradio-panel
+data:
+  # Where the audio server's gRPC control plane and public HTTP surface
+  # are reachable. These are commonly two different hosts (a gRPC-only
+  # internal endpoint plus a public streaming domain) -- see the panel's
+  # own README for how each is used.
+  AUDIOSERVER_GRPC_ADDR: "radio-rpc.example.com:443" # or "https://..." / "grpcs://..." for TLS
+  AUDIOSERVER_HTTP_BASE_URL: "https://radio.example.com"
+
+  # Username for the one-time bootstrap admin account, created only if
+  # the users table is empty at first startup. Manage further accounts
+  # from the panel's own Users page after that.
+  PANEL_BOOTSTRAP_USERNAME: "admin"

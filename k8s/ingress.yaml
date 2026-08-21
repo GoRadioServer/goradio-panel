@@ -1,0 +1,35 @@
+# Example only, written against ingress-nginx + cert-manager -- adjust
+# ingressClassName/annotations to match your cluster, or delete this file
+# and port-forward / use your own gateway if you don't run an ingress
+# controller.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: goradio-panel
+  namespace: goradio-panel
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    # GET /api/stations/{slug}/events is a long-lived SSE stream (station
+    # events -> the panel's live UI updates). Without these, nginx's
+    # default response buffering delays/batches events instead of
+    # forwarding them as they arrive, and its default 60s proxy-read-timeout
+    # kills the connection if a station goes quiet for a minute.
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - panel.example.com
+      secretName: goradio-panel-tls
+  rules:
+    - host: panel.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: goradio-panel
+                port:
+                  name: http

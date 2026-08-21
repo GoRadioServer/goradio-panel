@@ -1,0 +1,9 @@
+/bin/
+/data/
+*.log
+panel.yaml
+
+web/node_modules/
+web/dist/
+
+k8s/secret.yaml

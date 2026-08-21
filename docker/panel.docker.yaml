@@ -1,0 +1,35 @@
+# Baked into the container image as the default config. Every value that
+# matters for a real deployment is meant to be supplied via environment
+# variables instead (see internal/config's applyEnvOverrides and the
+# README's Docker section) -- that keeps the image itself
+# deployment-agnostic, so the same image works across environments purely
+# by varying env vars/Secrets, no custom-built image per deployment.
+
+http:
+  listen_addr: "0.0.0.0:8081"
+  static_dir: "/app/web/dist"
+
+audioserver:
+  grpc_addr: "localhost:9090" # AUDIOSERVER_GRPC_ADDR
+  http_base_url: "" # AUDIOSERVER_HTTP_BASE_URL
+  jwt_secret: "" # GORADIO_JWT_SECRET
+  admin_token_ttl: "1h"
+
+auth:
+  session_jwt_secret: "" # PANEL_SESSION_JWT_SECRET
+  session_ttl: "24h"
+  sse_token_ttl: "60s"
+
+db:
+  sqlite_path: "/data/panel.db" # PANEL_SQLITE_PATH
+
+bootstrap_admin:
+  username: "admin" # PANEL_BOOTSTRAP_USERNAME
+  password: "" # PANEL_BOOTSTRAP_PASSWORD (required)
+
+stats:
+  station_discovery_interval: "30s"
+  fallback_snapshot_interval: "5m"
+
+logging:
+  level: "info"
