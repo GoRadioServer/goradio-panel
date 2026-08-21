@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 
 	audioserverv1 "github.com/tmfksoft/goradio-panel/gen/go/audioserver/v1"
@@ -52,7 +53,24 @@ func New(ctx context.Context, grpcAddr, httpBaseURL string, jwtSecret []byte, to
 		creds = credentials.NewTLS(&tls.Config{})
 	}
 
-	conn, err := grpc.NewClient(target, grpc.WithTransportCredentials(creds))
+	conn, err := grpc.NewClient(
+		target,
+		grpc.WithTransportCredentials(creds),
+		// Without this, a silently-dead connection (NAT/LB idle timeout, a
+		// network partition -- anything that doesn't cleanly FIN/RST both
+		// ends) is never detected: the per-station SubscribeEvents streams
+		// the stats collector holds open would just block forever instead
+		// of erroring out and letting the collector reconnect. The audio
+		// server's own gRPC server sets a matching KeepaliveEnforcementPolicy
+		// (PermitWithoutStream, MinTime <= 20s) so these pings aren't
+		// mistaken for abuse and the connection torn down for the opposite
+		// reason.
+		grpc.WithKeepaliveParams(keepalive.ClientParameters{
+			Time:                20 * time.Second,
+			Timeout:             10 * time.Second,
+			PermitWithoutStream: true,
+		}),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("dial audio server %q: %w", grpcAddr, err)
 	}
