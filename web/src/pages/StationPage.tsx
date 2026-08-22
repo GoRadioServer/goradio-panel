@@ -12,6 +12,7 @@ import { HistoryList } from '../components/HistoryList'
 import { ListenerChart } from '../components/ListenerChart'
 import { Artwork } from '../components/Artwork'
 import { Modal } from '../components/Modal'
+import { useMeasuredHeight } from '../hooks/useMeasuredHeight'
 import { IconPlus, IconPower, IconSkip, IconTrash } from '../components/icons'
 
 export function StationPage() {
@@ -25,6 +26,10 @@ export function StationPage() {
   const unregister = useUnregisterStation(slug)
   const [stopCurrentOnClear, setStopCurrentOnClear] = useState(false)
   const [queueModalOpen, setQueueModalOpen] = useState(false)
+  // The logo should match the title block's real rendered height (it
+  // varies with viewport width -- badges/chips wrap onto more lines on
+  // narrower screens), not a fixed guess.
+  const [titlesRef, titlesHeight] = useMeasuredHeight<HTMLDivElement>(42)
 
   if (isLoading) {
     return (
@@ -40,8 +45,8 @@ export function StationPage() {
   return (
     <>
       <div className="page-head">
-        <Artwork src={status.logo_url} alt="" size={42} radius={11} />
-        <div className="page-titles">
+        <Artwork src={status.logo_url} alt="" size={titlesHeight} radius={11} />
+        <div className="page-titles" ref={titlesRef}>
           <div className="page-title-row">
             <h1 className="page-title">{status.name}</h1>
             {status.is_silence ? (
@@ -58,6 +63,11 @@ export function StationPage() {
           <div className="page-meta">
             <span className="chip">{status.slug}</span>
             <span>up {formatUptime(Number(status.uptime_seconds))}</span>
+            {Object.entries(status.metadata ?? {}).map(([key, value]) => (
+              <span className="chip" key={key}>
+                {key}: {value}
+              </span>
+            ))}
           </div>
         </div>
 

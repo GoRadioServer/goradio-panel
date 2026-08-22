@@ -141,3 +141,23 @@ export const IconX = (p: Props) => (
     <path d="M6 6l12 12M18 6 6 18" />
   </Svg>
 )
+
+export const IconKey = (p: Props) => (
+  <Svg {...p}>
+    <circle cx="8" cy="15" r="4" />
+    <path d="m10.8 12.2 8.7-8.7M15 8l2.3 2.3M18 5l1.7 1.7" />
+  </Svg>
+)
+
+export const IconCopy = (p: Props) => (
+  <Svg {...p}>
+    <rect x="9" y="9" width="12" height="12" rx="2" />
+    <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
+  </Svg>
+)
+
+export const IconCheck = (p: Props) => (
+  <Svg {...p}>
+    <path d="m5 13 4 4L19 7" />
+  </Svg>
+)

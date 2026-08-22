@@ -61,6 +61,7 @@ func main() {
 		SSETokenTTL:      cfg.Auth.SSETokenTTL,
 		AudioClient:      audioClient,
 		StatsStore:       statsStore,
+		StatsCollector:   collector,
 		StaticDir:        cfg.HTTP.StaticDir,
 	}
 	mux := httpapi.NewRouter(sdb, deps)

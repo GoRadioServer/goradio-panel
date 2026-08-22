@@ -125,6 +125,14 @@ func (c *Client) HTTPBaseURL() string {
 	return c.httpBaseURL
 }
 
+// MintStationToken signs an audio-server-compatible token using the same
+// shared secret this client uses for its own admin token -- lets the
+// panel issue tokens for controllers/observers (equivalent to
+// `radio tokengen`) without exposing that secret outside this package.
+func (c *Client) MintStationToken(slugs []string, subject string, ttl time.Duration, readOnly bool) (string, error) {
+	return auth.MintStationToken(c.jwtSecret, slugs, subject, ttl, readOnly)
+}
+
 func (c *Client) refreshToken() error {
 	token, err := auth.MintAdminToken(c.jwtSecret, c.tokenTTL)
 	if err != nil {

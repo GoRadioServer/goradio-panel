@@ -3,7 +3,7 @@ import { useAuth } from '../auth/AuthContext'
 import { useConfig } from '../hooks/useConfig'
 import { useStations } from '../hooks/useStations'
 import { Artwork } from './Artwork'
-import { IconRadio, IconSignOut, IconStack, IconUsers } from './icons'
+import { IconKey, IconRadio, IconSignOut, IconStack, IconUsers } from './icons'
 
 function serverLabel(httpBaseURL: string | undefined): string {
   if (!httpBaseURL) return 'audio server'
@@ -46,38 +46,51 @@ function Sidebar() {
         Stations
         <span className="nav-count">{stations?.length ?? '—'}</span>
       </Link>
-
-      {stations && stations.length > 0 && (
-        <>
-          <div className="nav-group-label">Stations</div>
-          {stations.map((s) => (
-            <Link
-              key={s.slug}
-              className={`nav-item${activeSlug === s.slug ? ' active' : ''}`}
-              to={`/stations/${encodeURIComponent(s.slug)}`}
-              title={s.slug}
-            >
-              <Artwork src={s.logo_url} alt="" size={18} radius={4} />
-              <span
-                style={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {s.name}
-              </span>
-              <span className="nav-count">{s.listener_count}</span>
-            </Link>
-          ))}
-        </>
-      )}
-
-      <div className="nav-group-label">Govern</div>
       <Link className={`nav-item${pathname === '/users' ? ' active' : ''}`} to="/users">
         <IconUsers size={15} />
         Users
       </Link>
+      <Link className={`nav-item${pathname === '/tokens' ? ' active' : ''}`} to="/tokens">
+        <IconKey size={15} />
+        Tokens
+      </Link>
+
+      {stations && stations.length > 0 && (
+        <>
+          <div className="nav-group-label">Stations</div>
+          {/* Scrolls on its own -- the nav above and the sign-out footer
+              below stay put regardless of how many stations there are. */}
+          <div className="station-nav-scroll">
+            {stations.map((s) => (
+              <Link
+                key={s.slug}
+                className={`nav-item${activeSlug === s.slug ? ' active' : ''}`}
+                to={`/stations/${encodeURIComponent(s.slug)}`}
+                title={s.slug}
+              >
+                <span className="nav-item-art">
+                  <Artwork src={s.logo_url} alt="" size={18} radius={4} />
+                  {s.offline ? (
+                    <span className="status-dot status-dot-danger" title="Offline" />
+                  ) : s.silence ? (
+                    <span className="status-dot status-dot-warn" title="Silence" />
+                  ) : null}
+                </span>
+                <span
+                  style={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {s.name}
+                </span>
+                <span className="nav-count">{s.listener_count}</span>
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
 
       <div className="sidebar-foot">
         <div className="avatar">{(username || '?').slice(0, 1)}</div>
@@ -97,7 +110,7 @@ function Breadcrumbs() {
 
   const station = stations?.find((s) => s.slug === slug)
   const onStation = pathname.startsWith('/stations/')
-  const onUsers = pathname === '/users'
+  const label = pathname === '/users' ? 'Users' : pathname === '/tokens' ? 'Tokens' : 'Stations'
 
   return (
     <div className="crumbs">
@@ -110,7 +123,7 @@ function Breadcrumbs() {
           <span className="crumb-current">{station?.name ?? slug}</span>
         </>
       ) : (
-        <span className="crumb-current">{onUsers ? 'Users' : 'Stations'}</span>
+        <span className="crumb-current">{label}</span>
       )}
     </div>
   )

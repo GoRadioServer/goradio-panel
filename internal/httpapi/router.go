@@ -21,6 +21,7 @@ type Deps struct {
 	SSETokenTTL      time.Duration
 	AudioClient      *audioclient.Client
 	StatsStore       *stats.Store
+	StatsCollector   *stats.Collector
 	// StaticDir, if set and present on disk, serves the built frontend
 	// (web/dist) alongside the API on the same port -- the Docker image
 	// bakes this in for a single-container deploy. Left empty for local
@@ -37,13 +38,14 @@ func NewRouter(sdb *sql.DB, deps Deps) http.Handler {
 	mux.HandleFunc("POST /api/auth/login", loginHandler(sdb, deps))
 	mux.HandleFunc("GET /api/auth/me", auth(meHandler))
 	mux.HandleFunc("GET /api/config", auth(configHandler(deps.AudioClient)))
+	mux.HandleFunc("POST /api/tokens", auth(mintTokenHandler(deps.AudioClient)))
 
 	mux.HandleFunc("GET /api/users", auth(listUsersHandler(sdb)))
 	mux.HandleFunc("POST /api/users", auth(createUserHandler(sdb)))
 	mux.HandleFunc("DELETE /api/users/{id}", auth(deleteUserHandler(sdb)))
 	mux.HandleFunc("POST /api/users/{id}/password", auth(setPasswordHandler(sdb)))
 
-	mux.HandleFunc("GET /api/stations", auth(stationsHandler(deps.AudioClient)))
+	mux.HandleFunc("GET /api/stations", auth(stationsHandler(deps.AudioClient, deps.StatsCollector)))
 	mux.HandleFunc("GET /api/stations/{slug}", auth(stationStatusHandler(deps.AudioClient)))
 	mux.HandleFunc("POST /api/stations/{slug}/unregister", auth(unregisterStationHandler(deps.AudioClient)))
 

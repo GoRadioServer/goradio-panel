@@ -6,6 +6,7 @@ import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { StationPage } from './pages/StationPage'
 import { UsersPage } from './pages/UsersPage'
+import { TokensPage } from './pages/TokensPage'
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth()
@@ -43,6 +44,14 @@ export default function App() {
                 element={
                   <Shell>
                     <UsersPage />
+                  </Shell>
+                }
+              />
+              <Route
+                path="/tokens"
+                element={
+                  <Shell>
+                    <TokensPage />
                   </Shell>
                 }
               />

@@ -4,16 +4,50 @@ import (
 	"net/http"
 
 	"github.com/tmfksoft/goradio-panel/internal/audioclient"
+	"github.com/tmfksoft/goradio-panel/internal/stats"
 )
 
-func stationsHandler(client *audioclient.Client) http.HandlerFunc {
+// stationListEntry is StationSummary plus the collector's live-monitoring
+// view of the station, for the sidebar/dashboard status dots.
+type stationListEntry struct {
+	audioclient.StationSummary
+	// Offline is true when the panel's own event watcher for this
+	// station is currently down (reconnecting after a dropped stream,
+	// audio server restart, etc) -- distinct from the station itself
+	// playing silence.
+	Offline bool `json:"offline"`
+	// Silence mirrors the station's is_silence: reachable, but nothing
+	// queued/playing right now.
+	Silence bool `json:"silence"`
+}
+
+func stationsHandler(client *audioclient.Client, collector *stats.Collector) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		stations, err := client.ListStations(r.Context())
 		if err != nil {
 			http.Error(w, "failed to list stations", http.StatusBadGateway)
 			return
 		}
-		writeJSON(w, http.StatusOK, stations)
+
+		var live map[string]stats.LiveState
+		if collector != nil {
+			live = collector.Snapshot()
+		}
+
+		entries := make([]stationListEntry, 0, len(stations))
+		for _, s := range stations {
+			entry := stationListEntry{StationSummary: s}
+			if state, ok := live[s.Slug]; ok {
+				entry.Offline = !state.Connected
+				entry.Silence = state.Silence
+			}
+			// If the collector hasn't started watching this station yet
+			// (just discovered, or collector unset), leave it as
+			// online/not-silent rather than flashing red -- ListStations
+			// itself just proved the audio server is reachable.
+			entries = append(entries, entry)
+		}
+		writeJSON(w, http.StatusOK, entries)
 	}
 }
 

@@ -4,6 +4,12 @@ export interface StationSummary {
   listener_count: number
   logo_url: string
   metadata: Record<string, string> | null
+  // Live-monitoring state from the panel's own event watcher, not the
+  // audio server itself -- offline means the panel has lost its
+  // SubscribeEvents connection to this station, not that the station
+  // is unhealthy.
+  offline: boolean
+  silence: boolean
 }
 
 export interface TrackSource {
@@ -38,6 +44,7 @@ export interface StationStatus {
   current_track_elapsed_seconds: string
   history: HistoryEntryStatus[]
   logo_url: string
+  metadata: Record<string, string> | null
 }
 
 export type QueueMode = 'APPEND' | 'PLAY_NEXT' | 'PLAY_NOW_INTERRUPT'
@@ -86,6 +93,18 @@ export interface SeekResponse {
 export interface ListenerStatPoint {
   ts: string
   listener_count: number
+}
+
+export interface MintTokenRequest {
+  slugs: string[]
+  subject?: string
+  ttl?: string
+  read_only: boolean
+}
+
+export interface MintTokenResponse {
+  token: string
+  expires_at: string
 }
 
 export interface StationEvent {

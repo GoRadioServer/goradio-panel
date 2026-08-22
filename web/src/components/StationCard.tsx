@@ -5,6 +5,7 @@ import { IconChevron, IconUsers } from './icons'
 
 export function StationCard({ station }: { station: StationSummary }) {
   const live = station.listener_count > 0
+  const metadata = Object.entries(station.metadata ?? {})
 
   return (
     <Link className="station-card" to={`/stations/${encodeURIComponent(station.slug)}`}>
@@ -17,11 +18,16 @@ export function StationCard({ station }: { station: StationSummary }) {
         <IconChevron size={15} />
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <span className={`badge${live ? ' accent' : ''}`}>
           <IconUsers size={12} />
           {station.listener_count} listener{station.listener_count === 1 ? '' : 's'}
         </span>
+        {metadata.map(([key, value]) => (
+          <span className="chip" key={key} title={key}>
+            {value}
+          </span>
+        ))}
       </div>
     </Link>
   )
