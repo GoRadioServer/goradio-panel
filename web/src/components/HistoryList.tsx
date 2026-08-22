@@ -1,7 +1,8 @@
-import type { HistoryEntryStatus, TrackSourceType } from '../api/types'
+import type { HistoryEntryStatus, QueueMode, TrackSourceType } from '../api/types'
 import { trackTitle } from '../api/format'
 import { useQueueTrack } from '../hooks/useStationMutations'
 import { Artwork } from './Artwork'
+import { SplitButton } from './SplitButton'
 import { IconRepeat } from './icons'
 
 // The API reports the full proto enum name (e.g. "TRACK_SOURCE_TYPE_HTTP_URL");
@@ -10,8 +11,31 @@ function shortSourceType(type: string): TrackSourceType {
   return type.replace('TRACK_SOURCE_TYPE_', '') as TrackSourceType
 }
 
+// Every requeue mode, offered behind the button's caret. Append is listed
+// explicitly even though it's what the main click already does, so the menu
+// shows the full set of choices rather than only the exceptions.
+const MODES: { mode: QueueMode; label: string; hint: string }[] = [
+  { mode: 'APPEND', label: 'Add to end', hint: 'Back of the queue' },
+  { mode: 'PLAY_NEXT', label: 'Play next', hint: 'Front of the queue' },
+  { mode: 'PLAY_NOW_INTERRUPT', label: 'Play now', hint: 'Interrupts current track' },
+]
+
 export function HistoryList({ slug, history }: { slug: string; history: HistoryEntryStatus[] }) {
   const queueTrack = useQueueTrack(slug)
+
+  const requeue = (item: HistoryEntryStatus, mode: QueueMode) => {
+    if (!item.source) return
+    queueTrack.mutate({
+      source: {
+        type: shortSourceType(item.source.type),
+        location: item.source.location,
+        display_title: item.source.display_title || undefined,
+        display_artist: item.source.display_artist || undefined,
+        cover_art_url: item.source.cover_art_url || undefined,
+      },
+      mode,
+    })
+  }
 
   if (history.length === 0) {
     return <div className="empty">Nothing played yet.</div>
@@ -37,26 +61,20 @@ export function HistoryList({ slug, history }: { slug: string; history: HistoryE
 
           <div className="row-actions">
             {item.source && (
-              <button
-                className="secondary sm"
+              <SplitButton
                 disabled={queueTrack.isPending}
                 title="Queue this track again"
-                onClick={() =>
-                  queueTrack.mutate({
-                    source: {
-                      type: shortSourceType(item.source!.type),
-                      location: item.source!.location,
-                      display_title: item.source!.display_title || undefined,
-                      display_artist: item.source!.display_artist || undefined,
-                      cover_art_url: item.source!.cover_art_url || undefined,
-                    },
-                    mode: 'APPEND',
-                  })
-                }
+                menuLabel="Requeue with a specific mode"
+                onClick={() => requeue(item, 'APPEND')}
+                options={MODES.map(({ mode, label, hint }) => ({
+                  label,
+                  hint,
+                  onSelect: () => requeue(item, mode),
+                }))}
               >
                 <IconRepeat size={13} />
                 Requeue
-              </button>
+              </SplitButton>
             )}
           </div>
         </div>

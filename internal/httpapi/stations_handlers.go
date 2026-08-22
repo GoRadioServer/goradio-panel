@@ -19,6 +19,10 @@ type stationListEntry struct {
 	// Silence mirrors the station's is_silence: reachable, but nothing
 	// queued/playing right now.
 	Silence bool `json:"silence"`
+	// NowPlaying is the station's current track, or null when nothing is
+	// playing. Comes from the collector's event stream rather than a
+	// per-station GetStatus call, so listing stays a single RPC.
+	NowPlaying *stats.NowPlaying `json:"now_playing"`
 }
 
 func stationsHandler(client *audioclient.Client, collector *stats.Collector) http.HandlerFunc {
@@ -40,6 +44,7 @@ func stationsHandler(client *audioclient.Client, collector *stats.Collector) htt
 			if state, ok := live[s.Slug]; ok {
 				entry.Offline = !state.Connected
 				entry.Silence = state.Silence
+				entry.NowPlaying = state.NowPlaying
 			}
 			// If the collector hasn't started watching this station yet
 			// (just discovered, or collector unset), leave it as

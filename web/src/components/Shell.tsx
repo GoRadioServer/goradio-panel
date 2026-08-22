@@ -1,7 +1,10 @@
+import { useMemo, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useConfig } from '../hooks/useConfig'
 import { useStations } from '../hooks/useStations'
+import { useMetadataKeys, useStationGroups } from '../hooks/useStationGroups'
+import type { StationSummary } from '../api/types'
 import { Artwork } from './Artwork'
 import { IconKey, IconRadio, IconSignOut, IconStack, IconUsers } from './icons'
 
@@ -14,12 +17,39 @@ function serverLabel(httpBaseURL: string | undefined): string {
   }
 }
 
+// One station's entry in the sidebar list, including its live status dot.
+function StationNavItem({ station, active }: { station: StationSummary; active: boolean }) {
+  return (
+    <Link
+      className={`nav-item${active ? ' active' : ''}`}
+      to={`/stations/${encodeURIComponent(station.slug)}`}
+      title={station.slug}
+    >
+      <span className="nav-item-art">
+        <Artwork src={station.logo_url} alt="" size={18} radius={4} />
+        {station.offline ? (
+          <span className="status-dot status-dot-danger" title="Offline" />
+        ) : station.silence ? (
+          <span className="status-dot status-dot-warn" title="Silence" />
+        ) : null}
+      </span>
+      <span className="nav-item-name">{station.name}</span>
+      <span className="nav-count">{station.listener_count}</span>
+    </Link>
+  )
+}
+
 function Sidebar() {
   const { username, logout } = useAuth()
   const { data: config } = useConfig()
   const { data: stations } = useStations()
   const { slug: activeSlug } = useParams<{ slug: string }>()
   const { pathname } = useLocation()
+  const [groupBy, setGroupBy] = useState('')
+
+  const list = useMemo(() => stations ?? [], [stations])
+  const metadataKeys = useMetadataKeys(list)
+  const groups = useStationGroups(list, groupBy)
 
   return (
     <aside className="sidebar">
@@ -40,7 +70,7 @@ function Sidebar() {
         </div>
       </div>
 
-      <div className="nav-group-label">Operate</div>
+      <div className="nav-group-label">Manage</div>
       <Link className={`nav-item${pathname === '/' ? ' active' : ''}`} to="/">
         <IconStack size={15} />
         Stations
@@ -55,39 +85,44 @@ function Sidebar() {
         Tokens
       </Link>
 
-      {stations && stations.length > 0 && (
+      {list.length > 0 && (
         <>
-          <div className="nav-group-label">Stations</div>
+          <div className="nav-group-head">
+            <span className="nav-group-label">Stations</span>
+            {metadataKeys.length > 0 && (
+              <select
+                className="nav-group-select"
+                value={groupBy}
+                aria-label="Group stations by"
+                onChange={(e) => setGroupBy(e.target.value)}
+              >
+                <option value="">No grouping</option>
+                {metadataKeys.map((k) => (
+                  <option key={k} value={k}>
+                    by {k}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
           {/* Scrolls on its own -- the nav above and the sign-out footer
               below stay put regardless of how many stations there are. */}
           <div className="station-nav-scroll">
-            {stations.map((s) => (
-              <Link
-                key={s.slug}
-                className={`nav-item${activeSlug === s.slug ? ' active' : ''}`}
-                to={`/stations/${encodeURIComponent(s.slug)}`}
-                title={s.slug}
-              >
-                <span className="nav-item-art">
-                  <Artwork src={s.logo_url} alt="" size={18} radius={4} />
-                  {s.offline ? (
-                    <span className="status-dot status-dot-danger" title="Offline" />
-                  ) : s.silence ? (
-                    <span className="status-dot status-dot-warn" title="Silence" />
-                  ) : null}
-                </span>
-                <span
-                  style={{
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {s.name}
-                </span>
-                <span className="nav-count">{s.listener_count}</span>
-              </Link>
-            ))}
+            {groups
+              ? groups.map(([value, stationsInGroup]) => (
+                  <div className="nav-subgroup" key={value}>
+                    <div className="nav-subgroup-label">
+                      {value}
+                      <span className="nav-count">{stationsInGroup.length}</span>
+                    </div>
+                    {stationsInGroup.map((s) => (
+                      <StationNavItem key={s.slug} station={s} active={activeSlug === s.slug} />
+                    ))}
+                  </div>
+                ))
+              : list.map((s) => (
+                  <StationNavItem key={s.slug} station={s} active={activeSlug === s.slug} />
+                ))}
           </div>
         </>
       )}

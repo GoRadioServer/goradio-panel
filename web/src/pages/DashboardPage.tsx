@@ -1,44 +1,16 @@
 import { useMemo, useState } from 'react'
 import { useStations } from '../hooks/useStations'
+import { useMetadataKeys, useStationGroups } from '../hooks/useStationGroups'
 import { StationCard } from '../components/StationCard'
 import { IconStack } from '../components/icons'
-import type { StationSummary } from '../api/types'
-
-const UNGROUPED_LABEL = 'Ungrouped'
 
 export function DashboardPage() {
   const { data: stations, isLoading, isError } = useStations()
   const [groupBy, setGroupBy] = useState('')
 
   const list = useMemo(() => stations ?? [], [stations])
-
-  // Every key seen across any station's metadata -- e.g. "type", "game" --
-  // not a fixed list, since the audio server treats metadata as freeform
-  // and any operator can set whatever keys they want.
-  const metadataKeys = useMemo(() => {
-    const keys = new Set<string>()
-    for (const s of list) {
-      for (const k of Object.keys(s.metadata ?? {})) keys.add(k)
-    }
-    return Array.from(keys).sort()
-  }, [list])
-
-  // Stations missing the selected key (or with it set to "") fall into an
-  // "Ungrouped" bucket rather than being dropped from the list.
-  const groups = useMemo(() => {
-    if (!groupBy) return null
-    const byValue = new Map<string, StationSummary[]>()
-    for (const s of list) {
-      const value = s.metadata?.[groupBy] || UNGROUPED_LABEL
-      if (!byValue.has(value)) byValue.set(value, [])
-      byValue.get(value)!.push(s)
-    }
-    return Array.from(byValue.entries()).sort(([a], [b]) => {
-      if (a === UNGROUPED_LABEL) return 1
-      if (b === UNGROUPED_LABEL) return -1
-      return a.localeCompare(b)
-    })
-  }, [list, groupBy])
+  const metadataKeys = useMetadataKeys(list)
+  const groups = useStationGroups(list, groupBy)
 
   if (isLoading) {
     return (
@@ -96,12 +68,12 @@ export function DashboardPage() {
         </div>
         <div className="stat">
           <div className="stat-label">Total listeners</div>
-          <div className={`stat-value${totalListeners > 0 ? ' accent' : ''}`}>{totalListeners}</div>
+          <div className="stat-value">{totalListeners}</div>
           <div className="stat-sub">across all stations</div>
         </div>
         <div className="stat">
           <div className="stat-label">With listeners</div>
-          <div className={`stat-value${withListeners > 0 ? ' success' : ''}`}>{withListeners}</div>
+          <div className="stat-value">{withListeners}</div>
           <div className="stat-sub">stations being tuned in</div>
         </div>
       </div>

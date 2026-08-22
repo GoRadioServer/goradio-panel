@@ -62,7 +62,6 @@ export function StationPage() {
           </div>
           <div className="page-meta">
             <span className="chip">{status.slug}</span>
-            <span>up {formatUptime(Number(status.uptime_seconds))}</span>
             {Object.entries(status.metadata ?? {}).map(([key, value]) => (
               <span className="chip" key={key}>
                 {key}: {value}
@@ -72,7 +71,7 @@ export function StationPage() {
         </div>
 
         <div className="page-actions">
-          <button className="secondary" onClick={() => setQueueModalOpen(true)}>
+          <button onClick={() => setQueueModalOpen(true)}>
             <IconPlus size={14} />
             Queue track
           </button>
@@ -104,7 +103,7 @@ export function StationPage() {
       <div className="stat-row">
         <div className="stat">
           <div className="stat-label">Listeners</div>
-          <div className={`stat-value${listeners > 0 ? ' accent' : ''}`}>{listeners}</div>
+          <div className="stat-value">{listeners}</div>
           <div className="stat-sub">tuned in right now</div>
         </div>
         <div className="stat">

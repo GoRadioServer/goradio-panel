@@ -25,6 +25,37 @@ type LiveState struct {
 	// Silence mirrors the station's own is_silence: registered and
 	// reachable, but nothing queued/playing right now.
 	Silence bool
+	// NowPlaying is the track the station last reported starting, or nil
+	// when nothing is playing.
+	NowPlaying *NowPlaying
+}
+
+// NowPlaying is the currently-playing track. The field names match the
+// TrackSource shape the rest of the API already returns, so the frontend
+// reuses its existing title/subtitle fallbacks rather than needing its own
+// for the station list.
+type NowPlaying struct {
+	Type          string `json:"type"`
+	Location      string `json:"location"`
+	DisplayTitle  string `json:"display_title"`
+	DisplayArtist string `json:"display_artist"`
+	CoverArtURL   string `json:"cover_art_url"`
+}
+
+// nowPlayingFrom converts a track source, returning nil for a missing one
+// so "nothing playing" stays distinguishable from "playing something with
+// no metadata".
+func nowPlayingFrom(src *audioserverv1.TrackSource) *NowPlaying {
+	if src == nil {
+		return nil
+	}
+	return &NowPlaying{
+		Type:          src.GetType().String(),
+		Location:      src.GetLocation(),
+		DisplayTitle:  src.GetDisplayTitle(),
+		DisplayArtist: src.GetDisplayArtist(),
+		CoverArtURL:   src.GetCoverArtUrl(),
+	}
 }
 
 type Collector struct {
@@ -39,10 +70,11 @@ type Collector struct {
 }
 
 type watch struct {
-	cancel    context.CancelFunc
-	lastCount atomic.Int64
-	connected atomic.Bool
-	silence   atomic.Bool
+	cancel     context.CancelFunc
+	lastCount  atomic.Int64
+	connected  atomic.Bool
+	silence    atomic.Bool
+	nowPlaying atomic.Pointer[NowPlaying]
 }
 
 func NewCollector(client *audioclient.Client, store *Store, discoveryInterval, fallbackInterval time.Duration, log *slog.Logger) *Collector {
@@ -66,8 +98,9 @@ func (c *Collector) Snapshot() map[string]LiveState {
 	out := make(map[string]LiveState, len(c.watched))
 	for slug, w := range c.watched {
 		out[slug] = LiveState{
-			Connected: w.connected.Load(),
-			Silence:   w.silence.Load(),
+			Connected:  w.connected.Load(),
+			Silence:    w.silence.Load(),
+			NowPlaying: w.nowPlaying.Load(),
 		}
 	}
 	return out
@@ -155,6 +188,7 @@ func (c *Collector) startWatch(ctx context.Context, slug string) {
 	if status, err := c.client.GetStatus(ctx, slug); err == nil {
 		w.lastCount.Store(status.GetListenerCount())
 		w.silence.Store(status.GetIsSilence())
+		w.nowPlaying.Store(nowPlayingFrom(status.GetCurrentTrack().GetSource()))
 	}
 
 	c.log.Info("stats: watching station", "slug", slug)
@@ -198,6 +232,10 @@ func (c *Collector) watchEvents(ctx context.Context, slug string, w *watch) {
 				w.silence.Store(true)
 			case audioserverv1.EventType_EVENT_TYPE_SILENCE_ENDED:
 				w.silence.Store(false)
+			case audioserverv1.EventType_EVENT_TYPE_TRACK_STARTED:
+				w.nowPlaying.Store(nowPlayingFrom(evt.GetTrackStarted().GetSource()))
+			case audioserverv1.EventType_EVENT_TYPE_TRACK_ENDED:
+				w.nowPlaying.Store(nil)
 			}
 		}
 		// events channel closed: stream ended, loop around to reconnect

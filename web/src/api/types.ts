@@ -10,6 +10,9 @@ export interface StationSummary {
   // is unhealthy.
   offline: boolean
   silence: boolean
+  // The station's current track, or null when nothing is playing. Shaped
+  // like TrackSource so the same title/subtitle helpers apply.
+  now_playing: TrackSource | null
 }
 
 export interface TrackSource {

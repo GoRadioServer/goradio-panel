@@ -210,6 +210,62 @@ code,
   padding: 12px 8px 5px;
 }
 
+.nav-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Compact enough to sit inline with the "Stations" heading rather than
+   taking a row of its own -- sidebar height is at a premium. */
+.nav-group-select {
+  width: auto;
+  padding: 2px 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-faint);
+  font-size: 10.5px;
+  cursor: pointer;
+}
+
+.nav-group-select:hover {
+  color: var(--text);
+}
+
+.nav-group-select:focus {
+  outline: none;
+  color: var(--text);
+}
+
+.nav-subgroup + .nav-subgroup {
+  margin-top: 8px;
+}
+
+.nav-subgroup-label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 10px 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.nav-subgroup-label .nav-count {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--text-faint);
+}
+
+.nav-item-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .nav-item {
   position: relative;
   display: flex;
@@ -575,6 +631,75 @@ button.sm {
   font-size: 12px;
 }
 
+/* ------------------------------------------------------- split buttons */
+
+/* The two halves butt together into one control: only the outer corners
+   round, and the caret's left border doubles as the divider. */
+.split-button {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.split-button .split-main {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.split-button .split-caret {
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  margin-left: -1px;
+}
+
+.split-menu {
+  position: fixed;
+  z-index: 60;
+  min-width: 172px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+}
+
+.split-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  width: 100%;
+  padding: 6px 9px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--text);
+  text-align: left;
+}
+
+.split-menu-item:hover:not(:disabled) {
+  background: var(--accent-bg);
+  filter: none;
+}
+
+.split-menu-label {
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.split-menu-hint {
+  font-size: 10.5px;
+  color: var(--text-faint);
+}
+
+.split-menu-item:hover .split-menu-hint {
+  color: var(--text-dim);
+}
+
 /* --------------------------------------------------------------- cards */
 
 .card {
@@ -685,8 +810,14 @@ button.sm {
 
 .stat {
   padding: 13px 15px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  /* A wash that ramps from the accent orange down into a deeper, redder
+     orange rather than fading out to neutral -- keeps the whole tile warm
+     instead of tinting just one corner. Both stops stay translucent over
+     the page background, so the tile reads darker than a --surface panel
+     and lets the orange border carry the edge. */
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(85, 18, 10, 0.4)),
+    var(--bg);
+  border: 1px solid var(--accent-border);
   border-radius: var(--radius);
 }
 
@@ -694,27 +825,23 @@ button.sm {
   font-size: 9.5px;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--text);
 }
 
+/* Always the accent -- the tiles read as one set, so the value colour is
+   the constant and the number itself carries the meaning. */
 .stat-value {
   font-size: 24px;
   font-weight: 600;
   line-height: 1.25;
   margin-top: 5px;
   letter-spacing: -0.02em;
-}
-
-.stat-value.accent {
   color: var(--accent-soft);
-}
-.stat-value.success {
-  color: var(--success);
 }
 
 .stat-sub {
   font-size: 11px;
-  color: var(--text-faint);
+  color: var(--text);
   margin-top: 1px;
 }
 
@@ -747,10 +874,11 @@ button.sm {
 
 .row-index {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12.5px;
   color: var(--text-faint);
   flex-shrink: 0;
   width: 18px;
+  text-align: center;
 }
 
 .row-title {
@@ -816,7 +944,6 @@ button.sm {
 .artwork-img {
   flex-shrink: 0;
   object-fit: cover;
-  background: var(--surface-3);
 }
 
 /* ------------------------------------------------------------ station */
@@ -842,8 +969,13 @@ button.sm {
   gap: 13px;
 }
 
+/* Column flex so the status strip can be pushed to the bottom edge with
+   margin-top:auto, keeping it aligned across a row of cards whose
+   metadata chips wrap to different heights. */
 .station-card {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   padding: 15px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -870,6 +1002,79 @@ button.sm {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.station-card-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  /* Guarantees separation from the status panel even on a tall card where
+     margin-top:auto has no free space left to distribute. */
+  margin-bottom: 11px;
+}
+
+/* Bleeds out through the card's 15px padding to sit flush in the bottom
+   corners, so it reads as a section of the card rather than a panel
+   floating inside it. The bottom radii are the card's 10px less its 1px
+   border, which is the radius of the hole they have to fill. */
+.station-card-status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: auto -15px -15px;
+  padding: 10px 15px;
+  border-top: 1px solid var(--border);
+  border-bottom-left-radius: 9px;
+  border-bottom-right-radius: 9px;
+  background: var(--surface-2);
+  min-width: 0;
+}
+
+/* Same warm ramp as the stat tiles, at lower intensity so a grid of cards
+   doesn't turn into a wall of orange. */
+.station-card-status.playing {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.17), rgba(85, 18, 10, 0.3));
+  border-top-color: var(--accent-border);
+}
+
+.station-card-status .dot {
+  color: var(--accent);
+  margin-left: 2px;
+}
+
+/* The status strip sits directly on the card, so the dot doesn't need the
+   ring that separates it from a nav item's artwork. */
+.station-card-dot {
+  position: static;
+  border: none;
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+}
+
+.station-card-track {
+  font-size: 12.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.station-card-artist {
+  font-size: 11px;
+  color: var(--accent-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.station-card-idle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-dim);
 }
 
 /* --------------------------------------------------------- now playing */
