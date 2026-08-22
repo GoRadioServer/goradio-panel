@@ -27,6 +27,8 @@ spec:
       labels:
         app: goradio-panel
     spec:
+      securityContext:
+        fsGroup: 1000
       containers:
         - name: goradio-panel
           image: ghcr.io/tmfksoft/goradio-panel:latest # replace with your pushed image
