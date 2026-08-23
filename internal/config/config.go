@@ -229,6 +229,9 @@ func (c *Config) applyEnvOverrides() {
 	if v := os.Getenv("PANEL_LISTEN_ADDR"); v != "" {
 		c.HTTP.ListenAddr = v
 	}
+	if v := os.Getenv("PANEL_STATIC_DIR"); v != "" {
+		c.HTTP.StaticDir = v
+	}
 	// The AUDIOSERVER_*/GORADIO_JWT_SECRET vars predate multi-server
 	// support and address a single server, so they apply to the first
 	// entry -- enough to drive a one-server deployment entirely from the

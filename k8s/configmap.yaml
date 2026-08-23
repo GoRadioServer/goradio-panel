@@ -14,6 +14,12 @@ data:
   AUDIOSERVER_GRPC_ADDR: "radio-rpc.example.com:443" # or "https://..." / "grpcs://..." for TLS
   AUDIOSERVER_HTTP_BASE_URL: "https://radio.example.com"
 
+  # Where the built web UI lives inside the image. The image's own baked
+  # config already sets this, but a deployment that mounts its own
+  # panel.yaml must set it (here or in that file) or the panel serves the
+  # API only and every page request 404s.
+  PANEL_STATIC_DIR: "/app/web/dist"
+
   # Username for the one-time bootstrap admin account, created only if
   # the users table is empty at first startup. Manage further accounts
   # from the panel's own Users page after that.

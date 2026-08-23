@@ -2,6 +2,13 @@
 
 http:
   listen_addr: "0.0.0.0:8081"
+  # Path to the built frontend (web/dist). Set it to serve the web UI from
+  # this same port; leave it unset for local dev, where the UI is served
+  # separately by `npm run dev`. Overridable via PANEL_STATIC_DIR. The
+  # container image ships the built UI at /app/web/dist -- if you mount
+  # your own config over the image's, set this or you get the API only and
+  # every page request 404s.
+  # static_dir: "/app/web/dist"
 
 # Every audio server the panel manages. The sidebar's server switcher
 # lists them in this order, and the first is the default -- the one a bare

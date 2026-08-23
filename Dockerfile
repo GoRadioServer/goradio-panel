@@ -12,6 +12,8 @@
 #     -e GORADIO_JWT_SECRET=<shared with the audio server> \
 #     -e PANEL_SESSION_JWT_SECRET=<a different random secret> \
 #     -e PANEL_BOOTSTRAP_PASSWORD=<first-run admin password> \
+#     # (the baked config already serves the UI from /app/web/dist; only
+#     #  set PANEL_STATIC_DIR if you mount your own panel.yaml over it)
 #     -v panel-data:/data \
 #     ghcr.io/tmfksoft/goradio-panel
 

@@ -97,6 +97,21 @@ func main() {
 		log.Info("audio server connected", "id", s.ID, "name", s.Name)
 	}
 
+	// A missing frontend is otherwise invisible: the router just doesn't
+	// register "/" and every page request 404s with nothing in the log to
+	// explain why.
+	switch {
+	case cfg.HTTP.StaticDir == "":
+		log.Warn("http.static_dir is not set: the API is served but the web UI is not, " +
+			"so requests outside /api will 404 (set http.static_dir or PANEL_STATIC_DIR; " +
+			"the container image ships the built UI at /app/web/dist)")
+	default:
+		if _, err := os.Stat(cfg.HTTP.StaticDir); err != nil {
+			log.Warn("http.static_dir does not exist: the web UI will not be served",
+				"static_dir", cfg.HTTP.StaticDir, "error", err)
+		}
+	}
+
 	log.Info("panel listening", "addr", cfg.HTTP.ListenAddr, "static_dir", cfg.HTTP.StaticDir)
 	if err := http.ListenAndServe(cfg.HTTP.ListenAddr, mux); err != nil {
 		log.Error("serve", "error", err)
