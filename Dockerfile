@@ -43,6 +43,14 @@ COPY --from=go-build /out/panel /usr/local/bin/panel
 COPY --from=web-build /src/web/dist /app/web/dist
 COPY docker/panel.docker.yaml /app/panel.yaml
 
+# Where this image puts the built UI. Set as an env var rather than relying
+# on the baked panel.yaml alone: mounting your own config over
+# /app/panel.yaml is a normal thing to do, and env overrides are applied
+# after the file is read, so the UI keeps being served either way. Without
+# this, a mounted config that omits http.static_dir leaves the panel
+# serving the API only, and every page request 404s.
+ENV PANEL_STATIC_DIR="/app/web/dist"
+
 # db.sqlite_path (default /data/panel.db, see docker/panel.docker.yaml)
 # should point under here -- mount a volume for the SQLite database (user
 # accounts + captured listener stats) to persist across restarts.
