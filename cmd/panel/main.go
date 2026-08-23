@@ -49,12 +49,13 @@ func main() {
 	serverConfigs := make([]audioclient.ServerConfig, 0, len(cfg.AudioServers))
 	for _, s := range cfg.AudioServers {
 		serverConfigs = append(serverConfigs, audioclient.ServerConfig{
-			ID:          s.ID,
-			Name:        s.Name,
-			GRPCAddr:    s.GRPCAddr,
-			HTTPBaseURL: s.HTTPBaseURL,
-			JWTSecret:   []byte(s.JWTSecret),
-			TokenTTL:    s.AdminTokenTTL,
+			ID:              s.ID,
+			Name:            s.Name,
+			GRPCAddr:        s.GRPCAddr,
+			HTTPBaseURL:     s.HTTPBaseURL,
+			JWTSecret:       []byte(s.JWTSecret),
+			TokenTTL:        s.AdminTokenTTL,
+			DefaultGrouping: s.DefaultGrouping,
 		})
 	}
 	registry, err := audioclient.NewRegistry(ctx, serverConfigs)

@@ -7,7 +7,12 @@ import { useVersion } from '../hooks/useVersion'
 import { DRAWER_QUERY, useDrawerSwipe } from '../hooks/useDrawerSwipe'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMeasuredHeight } from '../hooks/useMeasuredHeight'
-import { useMetadataKeys, useStationGroups } from '../hooks/useStationGroups'
+import {
+  useGroupBy,
+  useGroupByOptions,
+  useMetadataKeys,
+  useStationGroups,
+} from '../hooks/useStationGroups'
 import { serverRoute, stationRoute } from '../api/paths'
 import type { StationSummary } from '../api/types'
 import { Artwork } from './Artwork'
@@ -133,10 +138,11 @@ function Sidebar({
   const { data: stations } = useStations(serverId)
   const { slug: activeSlug } = useParams<{ slug: string }>()
   const { pathname } = useLocation()
-  const [groupBy, setGroupBy] = useState('')
+  const [groupBy, setGroupBy] = useGroupBy(serverId)
 
   const list = useMemo(() => stations ?? [], [stations])
   const metadataKeys = useMetadataKeys(list)
+  const groupOptions = useGroupByOptions(metadataKeys, groupBy)
   const groups = useStationGroups(list, groupBy)
 
   const onDashboard = pathname === serverRoute(serverId)
@@ -185,7 +191,7 @@ function Sidebar({
         <>
           <div className="nav-group-head">
             <span className="nav-group-label">Stations</span>
-            {metadataKeys.length > 0 && (
+            {groupOptions.length > 0 && (
               <select
                 className="nav-group-select"
                 value={groupBy}
@@ -193,7 +199,7 @@ function Sidebar({
                 onChange={(e) => setGroupBy(e.target.value)}
               >
                 <option value="">No grouping</option>
-                {metadataKeys.map((k) => (
+                {groupOptions.map((k) => (
                   <option key={k} value={k}>
                     by {k}
                   </option>

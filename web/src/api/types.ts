@@ -17,6 +17,8 @@ export interface AudioServerInfo {
   name: string
   http_base_url: string
   default: boolean
+  /** Station metadata key the UI groups by on first load; '' for none. */
+  default_grouping: string
 }
 
 export interface StationSummary {

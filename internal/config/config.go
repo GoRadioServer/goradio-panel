@@ -21,6 +21,11 @@ type AudioServer struct {
 	HTTPBaseURL   string        `yaml:"http_base_url"`
 	JWTSecret     string        `yaml:"jwt_secret"`
 	AdminTokenTTL time.Duration `yaml:"admin_token_ttl"`
+	// DefaultGrouping is a station metadata key ("game", "type", ...) that
+	// the sidebar and station list group by on first load. Empty means no
+	// grouping. It only sets the initial choice -- the operator can change
+	// it in the UI, and that choice holds until they switch server.
+	DefaultGrouping string `yaml:"default_grouping"`
 }
 
 type Config struct {

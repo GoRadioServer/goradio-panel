@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { StationSummary } from '../api/types'
+import { useServers } from './useServers'
 
 export const UNGROUPED_LABEL = 'Ungrouped'
 
@@ -40,4 +41,46 @@ export function useStationGroups(
       return a.localeCompare(b)
     })
   }, [stations, groupBy])
+}
+
+/**
+ * The current grouping key for one server's station list, seeded from that
+ * server's configured `default_grouping`.
+ *
+ * The seed is applied when the server's config first arrives and again on
+ * every server switch, but never afterwards -- so a grouping the operator
+ * picks by hand holds for as long as they stay on that server, rather than
+ * being snapped back to the configured default on the next render.
+ *
+ * Callers hold their own instance: the sidebar and the dashboard start
+ * from the same configured default but can then be changed independently.
+ */
+export function useGroupBy(serverId: string): [string, (value: string) => void] {
+  const { data: servers } = useServers()
+  const server = servers?.find((s) => s.id === serverId)
+
+  const [groupBy, setGroupBy] = useState('')
+  // null until a server's default has actually been applied, so the seed
+  // isn't considered done while /api/servers is still in flight.
+  const [seededFor, setSeededFor] = useState<string | null>(null)
+
+  if (server && seededFor !== serverId) {
+    setSeededFor(serverId)
+    setGroupBy(server.default_grouping || '')
+  }
+
+  return [groupBy, setGroupBy]
+}
+
+/**
+ * The keys to offer in a "group by" control. The configured default is
+ * included even when no station currently carries it -- otherwise a server
+ * grouped by a key its stations have temporarily stopped reporting would
+ * show every station as "Ungrouped" with no control on screen to undo it.
+ */
+export function useGroupByOptions(metadataKeys: string[], groupBy: string): string[] {
+  return useMemo(() => {
+    if (!groupBy || metadataKeys.includes(groupBy)) return metadataKeys
+    return [...metadataKeys, groupBy].sort()
+  }, [metadataKeys, groupBy])
 }

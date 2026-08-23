@@ -1,6 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useStations } from '../hooks/useStations'
-import { useMetadataKeys, useStationGroups } from '../hooks/useStationGroups'
+import {
+  useGroupBy,
+  useGroupByOptions,
+  useMetadataKeys,
+  useStationGroups,
+} from '../hooks/useStationGroups'
 import { StationCard } from '../components/StationCard'
 import { IconStack } from '../components/icons'
 import { useServerId } from '../hooks/useServers'
@@ -8,10 +13,11 @@ import { useServerId } from '../hooks/useServers'
 export function DashboardPage() {
   const serverId = useServerId()
   const { data: stations, isLoading, isError } = useStations(serverId)
-  const [groupBy, setGroupBy] = useState('')
+  const [groupBy, setGroupBy] = useGroupBy(serverId)
 
   const list = useMemo(() => stations ?? [], [stations])
   const metadataKeys = useMetadataKeys(list)
+  const groupOptions = useGroupByOptions(metadataKeys, groupBy)
   const groups = useStationGroups(list, groupBy)
 
   if (isLoading) {
@@ -40,7 +46,7 @@ export function DashboardPage() {
             Every station currently registered on the audio server
           </div>
         </div>
-        {metadataKeys.length > 0 && (
+        {groupOptions.length > 0 && (
           <div className="page-actions">
             <div className="field">
               <label htmlFor="group-by">Group by</label>
@@ -51,7 +57,7 @@ export function DashboardPage() {
                 onChange={(e) => setGroupBy(e.target.value)}
               >
                 <option value="">None</option>
-                {metadataKeys.map((k) => (
+                {groupOptions.map((k) => (
                   <option key={k} value={k}>
                     {k}
                   </option>

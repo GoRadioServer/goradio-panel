@@ -12,18 +12,22 @@ type Server struct {
 	ID     string
 	Name   string
 	Client *Client
+	// DefaultGrouping is the station metadata key the UI groups by on
+	// first load; empty for no grouping.
+	DefaultGrouping string
 }
 
 // ServerConfig is the subset of a configured audio server the registry
 // needs to dial it. It mirrors config.AudioServer without importing it,
 // keeping the dependency pointing one way (cmd -> audioclient).
 type ServerConfig struct {
-	ID          string
-	Name        string
-	GRPCAddr    string
-	HTTPBaseURL string
-	JWTSecret   []byte
-	TokenTTL    time.Duration
+	ID              string
+	Name            string
+	GRPCAddr        string
+	HTTPBaseURL     string
+	JWTSecret       []byte
+	TokenTTL        time.Duration
+	DefaultGrouping string
 }
 
 // Registry holds the panel's audio-server connections, keyed by ID and
@@ -46,7 +50,12 @@ func NewRegistry(ctx context.Context, servers []ServerConfig) (*Registry, error)
 			r.Close()
 			return nil, fmt.Errorf("audio server %q: %w", sc.ID, err)
 		}
-		r.order = append(r.order, Server{ID: sc.ID, Name: sc.Name, Client: client})
+		r.order = append(r.order, Server{
+			ID:              sc.ID,
+			Name:            sc.Name,
+			Client:          client,
+			DefaultGrouping: sc.DefaultGrouping,
+		})
 	}
 	// Indexed only after the slice has stopped growing -- taking &r.order[i]
 	// while still appending would leave the map pointing at a stale array.

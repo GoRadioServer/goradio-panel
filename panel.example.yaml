@@ -34,12 +34,18 @@ audioservers:
     # How often the panel re-mints its own admin service token
     # (slugs: ["*"], read_only: false) used for every gRPC call it makes.
     admin_token_ttl: "1h"
+    # A station metadata key to group the sidebar and station list by on
+    # first load, e.g. "game" or "type". Omit or leave empty for no
+    # grouping. This only seeds the control -- whoever is using the panel
+    # can change it, and their choice sticks until they switch server.
+    # default_grouping: "game"
 
   # - id: "backup"
   #   name: "Backup"
   #   grpc_addr: "radio-2.internal:9090"
   #   http_base_url: "https://radio-2.example.com"
   #   jwt_secret: "CHANGE_ME_TOO"
+  #   default_grouping: "type"
 
 # The pre-multi-server single-server block is still accepted: if
 # `audioservers` above is absent, an `audioserver:` block is used as the
