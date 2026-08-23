@@ -1,6 +1,10 @@
 // Package httpapi implements the panel's REST API: session-authenticated
-// routes proxying/wrapping the audio server's gRPC control plane, plus
+// routes proxying/wrapping the audio servers' gRPC control planes, plus
 // this panel's own login and listener-stats endpoints.
+//
+// Everything that acts on a station lives under /api/servers/{server}/,
+// resolved by Deps.withServer -- the panel can be pointed at several audio
+// servers at once and a bare slug is only unique within one of them.
 package httpapi
 
 import (
@@ -10,6 +14,7 @@ import (
 	"time"
 
 	"github.com/tmfksoft/goradio-panel/internal/audioclient"
+	"github.com/tmfksoft/goradio-panel/internal/releases"
 	"github.com/tmfksoft/goradio-panel/internal/stats"
 )
 
@@ -19,9 +24,14 @@ type Deps struct {
 	SessionJWTSecret []byte
 	SessionTTL       time.Duration
 	SSETokenTTL      time.Duration
-	AudioClient      *audioclient.Client
-	StatsStore       *stats.Store
-	StatsCollector   *stats.Collector
+	// Servers holds every configured audio server's connection.
+	Servers *audioclient.Registry
+	// Collectors holds each server's stats collector, keyed by server ID.
+	Collectors map[string]*stats.Collector
+	StatsStore *stats.Store
+	// Releases checks GitHub for newer audio server releases. Nil when
+	// update checking is disabled.
+	Releases *releases.Checker
 	// StaticDir, if set and present on disk, serves the built frontend
 	// (web/dist) alongside the API on the same port -- the Docker image
 	// bakes this in for a single-container deploy. Left empty for local
@@ -32,34 +42,43 @@ type Deps struct {
 func NewRouter(sdb *sql.DB, deps Deps) http.Handler {
 	mux := http.NewServeMux()
 	auth := func(h http.HandlerFunc) http.HandlerFunc { return requireSession(deps.SessionJWTSecret, h) }
+	// Session-authenticated and scoped to one audio server.
+	scoped := func(h scopedHandler) http.HandlerFunc { return auth(deps.withServer(h)) }
 
 	mux.HandleFunc("GET /healthz", healthzHandler)
 
 	mux.HandleFunc("POST /api/auth/login", loginHandler(sdb, deps))
 	mux.HandleFunc("GET /api/auth/me", auth(meHandler))
-	mux.HandleFunc("GET /api/config", auth(configHandler(deps.AudioClient)))
-	mux.HandleFunc("POST /api/tokens", auth(mintTokenHandler(deps.AudioClient)))
+
+	mux.HandleFunc("GET /api/servers", auth(serversHandler(deps.Servers)))
 
 	mux.HandleFunc("GET /api/users", auth(listUsersHandler(sdb)))
 	mux.HandleFunc("POST /api/users", auth(createUserHandler(sdb)))
 	mux.HandleFunc("DELETE /api/users/{id}", auth(deleteUserHandler(sdb)))
 	mux.HandleFunc("POST /api/users/{id}/password", auth(setPasswordHandler(sdb)))
 
-	mux.HandleFunc("GET /api/stations", auth(stationsHandler(deps.AudioClient, deps.StatsCollector)))
-	mux.HandleFunc("GET /api/stations/{slug}", auth(stationStatusHandler(deps.AudioClient)))
-	mux.HandleFunc("POST /api/stations/{slug}/unregister", auth(unregisterStationHandler(deps.AudioClient)))
+	mux.HandleFunc("GET /api/servers/{server}/config", scoped(configHandler))
+	mux.HandleFunc("GET /api/servers/{server}/version", scoped(versionHandler(deps.Releases)))
+	mux.HandleFunc("POST /api/servers/{server}/tokens", scoped(mintTokenHandler))
 
-	mux.HandleFunc("POST /api/stations/{slug}/queue", auth(queueTrackHandler(deps.AudioClient)))
-	mux.HandleFunc("DELETE /api/stations/{slug}/queue/{queueId}", auth(removeFromQueueHandler(deps.AudioClient)))
-	mux.HandleFunc("POST /api/stations/{slug}/queue/clear", auth(clearQueueHandler(deps.AudioClient)))
-	mux.HandleFunc("POST /api/stations/{slug}/skip", auth(skipHandler(deps.AudioClient)))
-	mux.HandleFunc("POST /api/stations/{slug}/skip-to/{queueId}", auth(skipToHandler(deps.AudioClient)))
-	mux.HandleFunc("POST /api/stations/{slug}/seek", auth(seekHandler(deps.AudioClient)))
+	mux.HandleFunc("GET /api/servers/{server}/stations", scoped(stationsHandler))
+	mux.HandleFunc("GET /api/servers/{server}/stations/{slug}", scoped(stationStatusHandler))
+	mux.HandleFunc("POST /api/servers/{server}/stations/{slug}/unregister", scoped(unregisterStationHandler))
 
-	mux.HandleFunc("GET /api/stations/{slug}/stats", auth(statsHandler(deps.StatsStore)))
+	mux.HandleFunc("POST /api/servers/{server}/stations/{slug}/queue", scoped(queueTrackHandler))
+	mux.HandleFunc("DELETE /api/servers/{server}/stations/{slug}/queue/{queueId}", scoped(removeFromQueueHandler))
+	mux.HandleFunc("POST /api/servers/{server}/stations/{slug}/queue/clear", scoped(clearQueueHandler))
+	mux.HandleFunc("POST /api/servers/{server}/stations/{slug}/skip", scoped(skipHandler))
+	mux.HandleFunc("POST /api/servers/{server}/stations/{slug}/skip-to/{queueId}", scoped(skipToHandler))
+	mux.HandleFunc("POST /api/servers/{server}/stations/{slug}/seek", scoped(seekHandler))
 
-	mux.HandleFunc("GET /api/sse-token", auth(sseTokenHandler(deps.SessionJWTSecret, deps.SSETokenTTL)))
-	mux.HandleFunc("GET /api/stations/{slug}/events", sseHandler(deps.AudioClient, deps.SessionJWTSecret))
+	mux.HandleFunc("GET /api/servers/{server}/stations/{slug}/stats", scoped(statsHandler(deps.StatsStore)))
+
+	mux.HandleFunc("GET /api/servers/{server}/sse-token", scoped(sseTokenHandler(deps.SessionJWTSecret, deps.SSETokenTTL)))
+	// Authenticated by its own ?token= rather than a session header, so it
+	// takes withServer directly instead of going through scoped.
+	mux.HandleFunc("GET /api/servers/{server}/stations/{slug}/events",
+		deps.withServer(sseHandler(deps.SessionJWTSecret)))
 
 	if deps.StaticDir != "" {
 		if _, err := os.Stat(deps.StaticDir); err == nil {

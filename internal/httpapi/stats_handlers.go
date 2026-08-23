@@ -7,8 +7,8 @@ import (
 	"github.com/tmfksoft/goradio-panel/internal/stats"
 )
 
-func statsHandler(store *stats.Store) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func statsHandler(store *stats.Store) scopedHandler {
+	return func(w http.ResponseWriter, r *http.Request, s serverScope) {
 		slug := r.PathValue("slug")
 
 		to := time.Now()
@@ -24,7 +24,7 @@ func statsHandler(store *stats.Store) http.HandlerFunc {
 			}
 		}
 
-		points, err := store.Query(r.Context(), slug, from, to)
+		points, err := store.Query(r.Context(), s.ID, slug, from, to)
 		if err != nil {
 			http.Error(w, "failed to query listener stats", http.StatusInternalServerError)
 			return

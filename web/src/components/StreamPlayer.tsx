@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useConfig } from '../hooks/useConfig'
 import { IconPlay, IconStop, IconVolume, IconVolumeMuted } from './icons'
+import { useServerId } from '../hooks/useServers'
 
 type Phase = 'connecting' | 'buffered' | 'error'
 
@@ -35,7 +36,8 @@ interface Props {
 // the trade-off is the stream downloads continuously in the background
 // regardless of mute state.
 export function StreamPlayer({ slug, onAudibleChange }: Props) {
-  const { data: config } = useConfig()
+  const serverId = useServerId()
+  const { data: config } = useConfig(serverId)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const listenClickRef = useRef<number | null>(null)
   const latencyRef = useRef<number | null>(null)

@@ -59,6 +59,7 @@ func nowPlayingFrom(src *audioserverv1.TrackSource) *NowPlaying {
 }
 
 type Collector struct {
+	serverID          string
 	client            *audioclient.Client
 	store             *Store
 	discoveryInterval time.Duration
@@ -77,13 +78,17 @@ type watch struct {
 	nowPlaying atomic.Pointer[NowPlaying]
 }
 
-func NewCollector(client *audioclient.Client, store *Store, discoveryInterval, fallbackInterval time.Duration, log *slog.Logger) *Collector {
+// NewCollector builds the collector for one audio server. serverID is
+// recorded against every captured stat so history stays attributed to the
+// server it came from.
+func NewCollector(serverID string, client *audioclient.Client, store *Store, discoveryInterval, fallbackInterval time.Duration, log *slog.Logger) *Collector {
 	return &Collector{
+		serverID:          serverID,
 		client:            client,
 		store:             store,
 		discoveryInterval: discoveryInterval,
 		fallbackInterval:  fallbackInterval,
-		log:               log,
+		log:               log.With("server", serverID),
 		watched:           make(map[string]*watch),
 	}
 }
@@ -225,7 +230,7 @@ func (c *Collector) watchEvents(ctx context.Context, slug string, w *watch) {
 			case audioserverv1.EventType_EVENT_TYPE_LISTENER_COUNT_CHANGED:
 				count := evt.GetListenerCountChanged().GetListenerCount()
 				w.lastCount.Store(count)
-				if err := c.store.Insert(ctx, slug, time.Now(), count); err != nil {
+				if err := c.store.Insert(ctx, c.serverID, slug, time.Now(), count); err != nil {
 					c.log.Warn("stats: insert listener stat failed", "slug", slug, "error", err)
 				}
 			case audioserverv1.EventType_EVENT_TYPE_SILENCE_STARTED:
@@ -249,7 +254,7 @@ func (c *Collector) snapshotFallback(ctx context.Context) {
 	defer c.mu.RUnlock()
 
 	for slug, w := range c.watched {
-		if err := c.store.Insert(ctx, slug, time.Now(), w.lastCount.Load()); err != nil {
+		if err := c.store.Insert(ctx, c.serverID, slug, time.Now(), w.lastCount.Load()); err != nil {
 			c.log.Warn("stats: fallback snapshot insert failed", "slug", slug, "error", err)
 		}
 	}

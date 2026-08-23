@@ -3,14 +3,17 @@ import type { StationSummary } from '../api/types'
 import { trackTitle } from '../api/format'
 import { Artwork } from './Artwork'
 import { IconChevron, IconUsers } from './icons'
+import { stationRoute } from '../api/paths'
+import { useServerId } from '../hooks/useServers'
 
 export function StationCard({ station }: { station: StationSummary }) {
   const live = station.listener_count > 0
   const metadata = Object.entries(station.metadata ?? {})
   const track = station.now_playing
+  const serverId = useServerId()
 
   return (
-    <Link className="station-card" to={`/stations/${encodeURIComponent(station.slug)}`}>
+    <Link className="station-card" to={stationRoute(serverId, station.slug)}>
       <div className="station-card-top">
         <Artwork src={station.logo_url} alt="" size={32} />
         <div style={{ minWidth: 0, flex: 1 }}>

@@ -193,6 +193,70 @@ code,
   margin-bottom: 3px;
 }
 
+.ns-version {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-faint);
+}
+
+/* Only the update-available form is a link, and it earns the accent --
+   it's the one state that wants acting on. */
+a.ns-version.update {
+  color: var(--accent-soft);
+}
+
+a.ns-version.update:hover {
+  color: var(--accent);
+}
+
+/* Compound selector on purpose: .status-dot's own rule sits further down
+   the file, so a single-class override would lose on source order and the
+   dot would go back to being absolutely positioned. */
+.status-dot.ns-version-dot {
+  position: static;
+  border: none;
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+}
+
+/* The switcher only replaces the static label when more than one audio
+   server is configured, so a single-server panel looks exactly as before. */
+.ns-switcher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-faint);
+}
+
+.ns-select {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  /* The chevron beside it is the affordance; the native arrow would sit
+     mid-row and duplicate it. */
+  appearance: none;
+}
+
+.ns-select:focus {
+  outline: none;
+}
+
+.ns-switcher:hover {
+  color: var(--accent-soft);
+}
+
 .ns-value {
   font-family: var(--mono);
   font-size: 12px;
@@ -791,12 +855,6 @@ button.sm {
   .grid-2 {
     grid-template-columns: minmax(0, 1fr);
   }
-  .app-shell {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .sidebar {
-    display: none;
-  }
 }
 
 /* ---------------------------------------------------------- stat tiles */
@@ -1044,8 +1102,9 @@ button.sm {
 }
 
 /* The status strip sits directly on the card, so the dot doesn't need the
-   ring that separates it from a nav item's artwork. */
-.station-card-dot {
+   ring that separates it from a nav item's artwork. Compound selector to
+   beat .status-dot regardless of source order. */
+.status-dot.station-card-dot {
   position: static;
   border: none;
   width: 7px;
@@ -1419,4 +1478,152 @@ input[type='checkbox'] {
   padding: 44px 0;
   color: var(--text-dim);
   font-size: 13px;
+}
+
+/* ------------------------------------------------------------- mobile */
+
+/* The nav toggle only exists below the drawer breakpoint; on desktop the
+   sidebar is always present so a button to reveal it would be noise. */
+.nav-toggle {
+  display: none;
+  flex-shrink: 0;
+  padding: 4px;
+}
+
+@media (max-width: 860px) {
+  /* One column: the sidebar comes out of the grid flow entirely and
+     becomes an overlay, so the page gets the full viewport width. */
+  .app-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .nav-toggle {
+    display: inline-flex;
+  }
+
+  /* Above the drawer and its backdrop: the menu button lives here, and
+     if the drawer covered it there'd be no way to close the drawer with
+     the same control that opened it. */
+  .topbar {
+    z-index: 70;
+  }
+
+  /* Starts below the topbar for the same reason, so --topbar-h has to be
+     set by the shell (it's measured, since the topbar's height depends on
+     its content). */
+  .sidebar {
+    position: fixed;
+    top: var(--topbar-h, 48px);
+    left: 0;
+    z-index: 60;
+    width: 270px;
+    max-width: 86vw;
+    height: calc(100dvh - var(--topbar-h, 48px));
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+  }
+
+  .app-shell.nav-open .sidebar {
+    transform: translateX(0);
+  }
+
+  .nav-backdrop {
+    position: fixed;
+    inset: var(--topbar-h, 48px) 0 0 0;
+    z-index: 50;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(2px);
+  }
+
+  .topbar {
+    padding: 9px 0;
+  }
+
+  .topbar-inner {
+    padding: 0 14px;
+  }
+
+  .page {
+    padding: 18px 14px 48px;
+  }
+
+  /* Header actions drop to their own full-width row rather than being
+     squeezed alongside the title. */
+  .page-head {
+    gap: 11px;
+    margin-bottom: 18px;
+  }
+
+  .page-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .page-title {
+    font-size: 18px;
+  }
+
+  /* Two across rather than one: the tiles hold a label, a number and a
+     short caption, so a full-width tile per stat is mostly empty space
+     and pushes the actual content off the first screen. */
+  .stat-row {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 9px;
+  }
+
+  .stat {
+    padding: 10px 11px;
+  }
+
+  .stat-value {
+    font-size: 19px;
+  }
+
+  .station-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* A row's actions can't stay on the same line as its title at phone
+     widths -- the title would be squeezed to a few characters. Wrap them
+     underneath, aligned right so the row still reads as one unit. */
+  .row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .row-actions {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .card-head {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .card-head-actions {
+    flex-wrap: wrap;
+  }
+
+  .scroll-list {
+    max-height: 340px;
+  }
+
+  .modal {
+    max-width: none;
+  }
+
+  .modal-overlay {
+    padding: 12px;
+    align-items: flex-end;
+  }
+}
+
+/* Very narrow phones: drop the last few fixed-width affordances. */
+@media (max-width: 420px) {
+  .page-actions button {
+    flex: 1 1 auto;
+  }
 }

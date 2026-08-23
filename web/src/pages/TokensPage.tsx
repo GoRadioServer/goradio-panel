@@ -2,12 +2,14 @@ import { useState, type FormEvent } from 'react'
 import { useStations } from '../hooks/useStations'
 import { useMintToken } from '../hooks/useTokens'
 import { IconCheck, IconCopy, IconKey } from '../components/icons'
+import { useServerId } from '../hooks/useServers'
 
 type Scope = 'all' | 'specific'
 
 export function TokensPage() {
-  const { data: stations } = useStations()
-  const mintToken = useMintToken()
+  const serverId = useServerId()
+  const { data: stations } = useStations(serverId)
+  const mintToken = useMintToken(serverId)
 
   const [scope, setScope] = useState<Scope>('all')
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>([])

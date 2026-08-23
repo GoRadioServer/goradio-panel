@@ -14,16 +14,18 @@ import { Artwork } from '../components/Artwork'
 import { Modal } from '../components/Modal'
 import { useMeasuredHeight } from '../hooks/useMeasuredHeight'
 import { IconPlus, IconPower, IconSkip, IconTrash } from '../components/icons'
+import { useServerId } from '../hooks/useServers'
 
 export function StationPage() {
   const { slug = '' } = useParams<{ slug: string }>()
-  const { data: status, isLoading, isError } = useStationStatus(slug)
-  const { data: stats } = useListenerStats(slug)
-  useStationEvents(slug)
+  const serverId = useServerId()
+  const { data: status, isLoading, isError } = useStationStatus(serverId, slug)
+  const { data: stats } = useListenerStats(serverId, slug)
+  useStationEvents(serverId, slug)
 
-  const skip = useSkip(slug)
-  const clearQueue = useClearQueue(slug)
-  const unregister = useUnregisterStation(slug)
+  const skip = useSkip(serverId, slug)
+  const clearQueue = useClearQueue(serverId, slug)
+  const unregister = useUnregisterStation(serverId, slug)
   const [stopCurrentOnClear, setStopCurrentOnClear] = useState(false)
   const [queueModalOpen, setQueueModalOpen] = useState(false)
   // The logo should match the title block's real rendered height (it

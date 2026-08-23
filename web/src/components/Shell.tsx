@@ -1,28 +1,41 @@
-import { useMemo, useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { useConfig } from '../hooks/useConfig'
 import { useStations } from '../hooks/useStations'
+import { useCurrentServerId, useServers } from '../hooks/useServers'
+import { useVersion } from '../hooks/useVersion'
+import { DRAWER_QUERY, useDrawerSwipe } from '../hooks/useDrawerSwipe'
+import { useMediaQuery } from '../hooks/useMediaQuery'
+import { useMeasuredHeight } from '../hooks/useMeasuredHeight'
 import { useMetadataKeys, useStationGroups } from '../hooks/useStationGroups'
+import { serverRoute, stationRoute } from '../api/paths'
 import type { StationSummary } from '../api/types'
 import { Artwork } from './Artwork'
-import { IconKey, IconRadio, IconSignOut, IconStack, IconUsers } from './icons'
-
-function serverLabel(httpBaseURL: string | undefined): string {
-  if (!httpBaseURL) return 'audio server'
-  try {
-    return new URL(httpBaseURL).host
-  } catch {
-    return httpBaseURL
-  }
-}
+import {
+  IconChevronDown,
+  IconKey,
+  IconMenu,
+  IconRadio,
+  IconSignOut,
+  IconStack,
+  IconUsers,
+  IconX,
+} from './icons'
 
 // One station's entry in the sidebar list, including its live status dot.
-function StationNavItem({ station, active }: { station: StationSummary; active: boolean }) {
+function StationNavItem({
+  serverId,
+  station,
+  active,
+}: {
+  serverId: string
+  station: StationSummary
+  active: boolean
+}) {
   return (
     <Link
       className={`nav-item${active ? ' active' : ''}`}
-      to={`/stations/${encodeURIComponent(station.slug)}`}
+      to={stationRoute(serverId, station.slug)}
       title={station.slug}
     >
       <span className="nav-item-art">
@@ -39,10 +52,85 @@ function StationNavItem({ station, active }: { station: StationSummary; active: 
   )
 }
 
-function Sidebar() {
+// The running version of the selected audio server, flagging when a newer
+// release exists upstream. Renders nothing at all when the server doesn't
+// report a version (too old for the RPC, or unreachable) -- an empty row
+// would just be noise.
+function ServerVersion({ serverId }: { serverId: string }) {
+  const { data } = useVersion(serverId)
+  if (!data?.version) return null
+
+  if (!data.update_available || !data.latest) {
+    return <div className="ns-version">{data.version}</div>
+  }
+  return (
+    <a
+      className="ns-version update"
+      href={data.latest.url}
+      target="_blank"
+      rel="noreferrer"
+      title={`${data.version} installed · ${data.latest.version} available`}
+      // Stops a click bubbling into the card, which is otherwise inert but
+      // sits inside the nav column.
+      onClick={(e) => e.stopPropagation()}
+    >
+      <span className="status-dot status-dot-warn ns-version-dot" />
+      {data.version} → {data.latest.version}
+    </a>
+  )
+}
+
+// The audio-server switcher. With one server configured it's a plain
+// label; with several it becomes a select that navigates to the chosen
+// server's dashboard.
+function ServerSwitcher({ serverId }: { serverId: string }) {
+  const { data: servers } = useServers()
+  const navigate = useNavigate()
+
+  const current = servers?.find((s) => s.id === serverId)
+  const label = current?.name ?? serverId ?? '—'
+
+  return (
+    <div className="ns-card">
+      <div className="ns-label">Audio server</div>
+      {servers && servers.length > 1 ? (
+        <div className="ns-switcher">
+          <select
+            className="ns-select"
+            aria-label="Switch audio server"
+            value={serverId}
+            onChange={(e) => navigate(serverRoute(e.target.value))}
+          >
+            {servers.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+          <IconChevronDown size={14} />
+        </div>
+      ) : (
+        <div className="ns-value" title={current?.http_base_url || undefined}>
+          {label}
+        </div>
+      )}
+      <ServerVersion serverId={serverId} />
+    </div>
+  )
+}
+
+function Sidebar({
+  onNavigate,
+  innerRef,
+  style,
+}: {
+  onNavigate?: () => void
+  innerRef?: React.Ref<HTMLElement>
+  style?: React.CSSProperties
+}) {
   const { username, logout } = useAuth()
-  const { data: config } = useConfig()
-  const { data: stations } = useStations()
+  const serverId = useCurrentServerId()
+  const { data: stations } = useStations(serverId)
   const { slug: activeSlug } = useParams<{ slug: string }>()
   const { pathname } = useLocation()
   const [groupBy, setGroupBy] = useState('')
@@ -51,8 +139,21 @@ function Sidebar() {
   const metadataKeys = useMetadataKeys(list)
   const groups = useStationGroups(list, groupBy)
 
+  const onDashboard = pathname === serverRoute(serverId)
+  const onTokens = pathname === `${serverRoute(serverId)}/tokens`
+
   return (
-    <aside className="sidebar">
+    // onClickCapture rather than per-link handlers: every navigation in
+    // here should dismiss the mobile drawer, and catching it once at the
+    // root means new links can't forget to.
+    <aside
+      className="sidebar"
+      ref={innerRef}
+      style={style}
+      onClickCapture={(e) => {
+        if ((e.target as HTMLElement).closest('a')) onNavigate?.()
+      }}
+    >
       <div className="brand">
         <div className="brand-mark">
           <IconRadio size={17} />
@@ -63,15 +164,10 @@ function Sidebar() {
         </div>
       </div>
 
-      <div className="ns-card">
-        <div className="ns-label">Audio server</div>
-        <div className="ns-value" title={config?.http_base_url || undefined}>
-          {serverLabel(config?.http_base_url)}
-        </div>
-      </div>
+      <ServerSwitcher serverId={serverId} />
 
       <div className="nav-group-label">Manage</div>
-      <Link className={`nav-item${pathname === '/' ? ' active' : ''}`} to="/">
+      <Link className={`nav-item${onDashboard ? ' active' : ''}`} to={serverRoute(serverId)}>
         <IconStack size={15} />
         Stations
         <span className="nav-count">{stations?.length ?? '—'}</span>
@@ -80,7 +176,7 @@ function Sidebar() {
         <IconUsers size={15} />
         Users
       </Link>
-      <Link className={`nav-item${pathname === '/tokens' ? ' active' : ''}`} to="/tokens">
+      <Link className={`nav-item${onTokens ? ' active' : ''}`} to={`${serverRoute(serverId)}/tokens`}>
         <IconKey size={15} />
         Tokens
       </Link>
@@ -116,12 +212,22 @@ function Sidebar() {
                       <span className="nav-count">{stationsInGroup.length}</span>
                     </div>
                     {stationsInGroup.map((s) => (
-                      <StationNavItem key={s.slug} station={s} active={activeSlug === s.slug} />
+                      <StationNavItem
+                        key={s.slug}
+                        serverId={serverId}
+                        station={s}
+                        active={activeSlug === s.slug}
+                      />
                     ))}
                   </div>
                 ))
               : list.map((s) => (
-                  <StationNavItem key={s.slug} station={s} active={activeSlug === s.slug} />
+                  <StationNavItem
+                    key={s.slug}
+                    serverId={serverId}
+                    station={s}
+                    active={activeSlug === s.slug}
+                  />
                 ))}
           </div>
         </>
@@ -141,19 +247,22 @@ function Sidebar() {
 function Breadcrumbs() {
   const { pathname } = useLocation()
   const { slug } = useParams<{ slug: string }>()
-  const { data: stations } = useStations()
+  const serverId = useCurrentServerId()
+  const { data: servers } = useServers()
+  const { data: stations } = useStations(serverId)
 
   const station = stations?.find((s) => s.slug === slug)
-  const onStation = pathname.startsWith('/stations/')
-  const label = pathname === '/users' ? 'Users' : pathname === '/tokens' ? 'Tokens' : 'Stations'
+  const onStation = Boolean(slug)
+  const serverName = servers?.find((s) => s.id === serverId)?.name ?? serverId
+  const label = pathname === '/users' ? 'Users' : pathname.endsWith('/tokens') ? 'Tokens' : 'Stations'
 
   return (
     <div className="crumbs">
-      <Link to="/">goradio</Link>
+      <Link to={serverRoute(serverId)}>{serverName || 'goradio'}</Link>
       <span className="crumb-sep">›</span>
       {onStation ? (
         <>
-          <Link to="/">Stations</Link>
+          <Link to={serverRoute(serverId)}>Stations</Link>
           <span className="crumb-sep">›</span>
           <span className="crumb-current">{station?.name ?? slug}</span>
         </>
@@ -165,12 +274,96 @@ function Breadcrumbs() {
 }
 
 export function Shell({ children }: { children: React.ReactNode }) {
+  const [navOpen, setNavOpen] = useState(false)
+  const { pathname } = useLocation()
+  const sidebarRef = useRef<HTMLElement>(null)
+  const drag = useDrawerSwipe(sidebarRef, { open: navOpen, setOpen: setNavOpen })
+  // The mobile drawer is positioned below the topbar so the menu button
+  // stays on top of it and can always close it again. Measured rather than
+  // hard-coded because the topbar's height depends on its content.
+  const [topbarRef, topbarHeight] = useMeasuredHeight<HTMLElement>(48)
+  const isDrawer = useMediaQuery(DRAWER_QUERY)
+
+  // Route changes that don't originate from a sidebar tap (breadcrumbs, a
+  // station card, the browser back button) should also leave the drawer
+  // closed. Adjusted during render rather than in an effect -- React
+  // re-runs the render before painting, so the drawer never flashes open
+  // on the new route the way an effect-based reset would.
+  const [pathAtRender, setPathAtRender] = useState(pathname)
+  if (pathname !== pathAtRender) {
+    setPathAtRender(pathname)
+    setNavOpen(false)
+  }
+
+  // Above the breakpoint there is no drawer to be open, and leaving the
+  // flag set would mean coming back down to mobile lands with the drawer
+  // already out.
+  if (!isDrawer && navOpen) setNavOpen(false)
+
+  // While the drawer is open it owns the screen; letting the page scroll
+  // underneath it is disorienting on a phone.
+  useEffect(() => {
+    if (!navOpen) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previous
+    }
+  }, [navOpen])
+
+  useEffect(() => {
+    if (!navOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setNavOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [navOpen])
+
+  // The drawer's position has exactly ONE source: this expression. It used
+  // to come from a CSS class *and* an inline transform, which meant the two
+  // could disagree -- a stale inline transform would pin the drawer while
+  // navOpen (and so the menu icon) carried on toggling independently.
+  // Deriving both from navOpen in the same render makes that unrepresentable.
+  //
+  // Only on mobile: above the breakpoint the sidebar is a normal grid
+  // column and must not be transformed at all.
+  const sidebarStyle: React.CSSProperties | undefined = !isDrawer
+    ? undefined
+    : drag !== null
+      ? // Following the finger: transition off, or every frame would
+        // animate against the last one and lag behind.
+        { transform: `translateX(${drag.offset}px)`, transition: 'none' }
+      : { transform: navOpen ? 'translateX(0)' : 'translateX(-100%)' }
+
+  // 0 = fully closed, 1 = fully open. Used to fade the backdrop in step
+  // with the drag rather than popping it in at the end.
+  const dragProgress = drag === null ? (navOpen ? 1 : 0) : 1 + drag.offset / drag.width
+
   return (
-    <div className="app-shell">
-      <Sidebar />
+    <div
+      className={`app-shell${navOpen ? ' nav-open' : ''}`}
+      style={{ '--topbar-h': `${topbarHeight}px` } as React.CSSProperties}
+    >
+      {isDrawer && dragProgress > 0 && (
+        <div
+          className="nav-backdrop"
+          style={drag === null ? undefined : { opacity: dragProgress, transition: 'none' }}
+          onClick={() => setNavOpen(false)}
+        />
+      )}
+      <Sidebar onNavigate={() => setNavOpen(false)} innerRef={sidebarRef} style={sidebarStyle} />
       <div className="main">
-        <header className="topbar">
+        <header className="topbar" ref={topbarRef}>
           <div className="topbar-inner">
+            <button
+              className="ghost sm nav-toggle"
+              aria-label={navOpen ? 'Close navigation' : 'Open navigation'}
+              aria-expanded={navOpen}
+              onClick={() => setNavOpen((v) => !v)}
+            >
+              {navOpen ? <IconX size={17} /> : <IconMenu size={17} />}
+            </button>
             <Breadcrumbs />
           </div>
         </header>

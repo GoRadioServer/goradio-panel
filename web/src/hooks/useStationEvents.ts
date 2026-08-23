@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { apiJSON } from '../api/client'
+import { apiPath, stationApiPath } from '../api/paths'
 import type { StationEvent } from '../api/types'
 
 interface SSETokenResponse {
@@ -15,10 +16,11 @@ interface SSETokenResponse {
 // Auth uses a short-lived, single-purpose SSE token (see the panel's SSE
 // auth design note) minted fresh on every (re)connect, since EventSource
 // can't send an Authorization header.
-export function useStationEvents(slug: string) {
+export function useStationEvents(serverId: string, slug: string) {
   const queryClient = useQueryClient()
 
   useEffect(() => {
+    if (!serverId || !slug) return
     let cancelled = false
     let es: EventSource | null = null
     let retryTimer: ReturnType<typeof setTimeout> | null = null
@@ -27,16 +29,16 @@ export function useStationEvents(slug: string) {
       if (cancelled) return
       try {
         const { token } = await apiJSON<SSETokenResponse>(
-          `/api/sse-token?slug=${encodeURIComponent(slug)}`,
+          apiPath(serverId, `/sse-token?slug=${encodeURIComponent(slug)}`),
         )
         if (cancelled) return
 
         es = new EventSource(
-          `/api/stations/${encodeURIComponent(slug)}/events?token=${encodeURIComponent(token)}`,
+          stationApiPath(serverId, slug, `/events?token=${encodeURIComponent(token)}`),
         )
         es.onmessage = (e) => {
           const evt = JSON.parse(e.data) as StationEvent
-          applyEvent(queryClient, slug, evt)
+          applyEvent(queryClient, serverId, slug, evt)
         }
         es.onerror = () => {
           es?.close()
@@ -55,10 +57,10 @@ export function useStationEvents(slug: string) {
       es?.close()
       if (retryTimer) clearTimeout(retryTimer)
     }
-  }, [slug, queryClient])
+  }, [serverId, slug, queryClient])
 }
 
-function applyEvent(queryClient: QueryClient, slug: string, evt: StationEvent) {
+function applyEvent(queryClient: QueryClient, serverId: string, slug: string, evt: StationEvent) {
   switch (evt.type) {
     case 'EVENT_TYPE_TRACK_STARTED':
     case 'EVENT_TYPE_TRACK_ENDED':
@@ -67,11 +69,11 @@ function applyEvent(queryClient: QueryClient, slug: string, evt: StationEvent) {
     case 'EVENT_TYPE_SILENCE_ENDED':
     case 'EVENT_TYPE_QUEUE_LOW':
     case 'EVENT_TYPE_ERROR':
-      queryClient.invalidateQueries({ queryKey: ['station', slug] })
+      queryClient.invalidateQueries({ queryKey: ['station', serverId, slug] })
       break
     case 'EVENT_TYPE_LISTENER_COUNT_CHANGED':
-      queryClient.invalidateQueries({ queryKey: ['station', slug] })
-      queryClient.invalidateQueries({ queryKey: ['stationStats', slug] })
+      queryClient.invalidateQueries({ queryKey: ['station', serverId, slug] })
+      queryClient.invalidateQueries({ queryKey: ['stationStats', serverId, slug] })
       break
     default:
       break

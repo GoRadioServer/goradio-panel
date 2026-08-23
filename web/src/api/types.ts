@@ -1,3 +1,24 @@
+export interface ReleaseInfo {
+  version: string
+  url: string
+  published_at: string
+}
+
+export interface VersionInfo {
+  /** What this audio server reports running; '' if it's unreachable or predates the version RPC. */
+  version: string
+  /** Newest upstream release, or null when update checks are off or GitHub hasn't answered. */
+  latest: ReleaseInfo | null
+  update_available: boolean
+}
+
+export interface AudioServerInfo {
+  id: string
+  name: string
+  http_base_url: string
+  default: boolean
+}
+
 export interface StationSummary {
   slug: string
   name: string

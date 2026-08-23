@@ -14,6 +14,7 @@ import (
 	"github.com/tmfksoft/goradio-panel/internal/config"
 	"github.com/tmfksoft/goradio-panel/internal/db"
 	"github.com/tmfksoft/goradio-panel/internal/httpapi"
+	"github.com/tmfksoft/goradio-panel/internal/releases"
 	"github.com/tmfksoft/goradio-panel/internal/stats"
 )
 
@@ -29,7 +30,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	sdb, err := db.Open(cfg.DB.SQLitePath)
+	// The default server owns any listener_stats rows captured before the
+	// panel became multi-server, so it has to be known at migration time.
+	sdb, err := db.Open(cfg.DB.SQLitePath, cfg.DefaultServerID())
 	if err != nil {
 		log.Error("open database", "error", err)
 		os.Exit(1)
@@ -43,28 +46,55 @@ func main() {
 		os.Exit(1)
 	}
 
-	audioClient, err := audioclient.New(ctx, cfg.AudioServer.GRPCAddr, cfg.AudioServer.HTTPBaseURL,
-		[]byte(cfg.AudioServer.JWTSecret), cfg.AudioServer.AdminTokenTTL)
+	serverConfigs := make([]audioclient.ServerConfig, 0, len(cfg.AudioServers))
+	for _, s := range cfg.AudioServers {
+		serverConfigs = append(serverConfigs, audioclient.ServerConfig{
+			ID:          s.ID,
+			Name:        s.Name,
+			GRPCAddr:    s.GRPCAddr,
+			HTTPBaseURL: s.HTTPBaseURL,
+			JWTSecret:   []byte(s.JWTSecret),
+			TokenTTL:    s.AdminTokenTTL,
+		})
+	}
+	registry, err := audioclient.NewRegistry(ctx, serverConfigs)
 	if err != nil {
-		log.Error("connect to audio server", "error", err)
+		log.Error("connect to audio servers", "error", err)
 		os.Exit(1)
 	}
-	defer audioClient.Close()
+	defer registry.Close()
 
 	statsStore := stats.NewStore(sdb)
-	collector := stats.NewCollector(audioClient, statsStore, cfg.Stats.StationDiscoveryInterval, cfg.Stats.FallbackSnapshotInterval, log)
-	go collector.Run(ctx)
+	collectors := make(map[string]*stats.Collector, len(registry.All()))
+	for _, s := range registry.All() {
+		c := stats.NewCollector(s.ID, s.Client, statsStore,
+			cfg.Stats.StationDiscoveryInterval, cfg.Stats.FallbackSnapshotInterval, log)
+		collectors[s.ID] = c
+		go c.Run(ctx)
+	}
+
+	var releaseChecker *releases.Checker
+	if cfg.UpdatesEnabled() {
+		releaseChecker = releases.NewChecker(cfg.Updates.GitHubRepo, cfg.Updates.CheckInterval)
+		go releaseChecker.Run(ctx)
+		log.Info("update checks enabled", "repo", cfg.Updates.GitHubRepo, "interval", cfg.Updates.CheckInterval)
+	}
 
 	deps := httpapi.Deps{
 		SessionJWTSecret: []byte(cfg.Auth.SessionJWTSecret),
 		SessionTTL:       cfg.Auth.SessionTTL,
 		SSETokenTTL:      cfg.Auth.SSETokenTTL,
-		AudioClient:      audioClient,
+		Servers:          registry,
+		Collectors:       collectors,
 		StatsStore:       statsStore,
-		StatsCollector:   collector,
+		Releases:         releaseChecker,
 		StaticDir:        cfg.HTTP.StaticDir,
 	}
 	mux := httpapi.NewRouter(sdb, deps)
+
+	for _, s := range registry.All() {
+		log.Info("audio server connected", "id", s.ID, "name", s.Name)
+	}
 
 	log.Info("panel listening", "addr", cfg.HTTP.ListenAddr, "static_dir", cfg.HTTP.StaticDir)
 	if err := http.ListenAndServe(cfg.HTTP.ListenAddr, mux); err != nil {

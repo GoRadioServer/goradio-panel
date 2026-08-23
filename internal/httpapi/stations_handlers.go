@@ -25,60 +25,54 @@ type stationListEntry struct {
 	NowPlaying *stats.NowPlaying `json:"now_playing"`
 }
 
-func stationsHandler(client *audioclient.Client, collector *stats.Collector) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		stations, err := client.ListStations(r.Context())
-		if err != nil {
-			http.Error(w, "failed to list stations", http.StatusBadGateway)
-			return
-		}
-
-		var live map[string]stats.LiveState
-		if collector != nil {
-			live = collector.Snapshot()
-		}
-
-		entries := make([]stationListEntry, 0, len(stations))
-		for _, s := range stations {
-			entry := stationListEntry{StationSummary: s}
-			if state, ok := live[s.Slug]; ok {
-				entry.Offline = !state.Connected
-				entry.Silence = state.Silence
-				entry.NowPlaying = state.NowPlaying
-			}
-			// If the collector hasn't started watching this station yet
-			// (just discovered, or collector unset), leave it as
-			// online/not-silent rather than flashing red -- ListStations
-			// itself just proved the audio server is reachable.
-			entries = append(entries, entry)
-		}
-		writeJSON(w, http.StatusOK, entries)
+func stationsHandler(w http.ResponseWriter, r *http.Request, s serverScope) {
+	stations, err := s.Client.ListStations(r.Context())
+	if err != nil {
+		http.Error(w, "failed to list stations", http.StatusBadGateway)
+		return
 	}
+
+	var live map[string]stats.LiveState
+	if s.Collector != nil {
+		live = s.Collector.Snapshot()
+	}
+
+	entries := make([]stationListEntry, 0, len(stations))
+	for _, st := range stations {
+		entry := stationListEntry{StationSummary: st}
+		if state, ok := live[st.Slug]; ok {
+			entry.Offline = !state.Connected
+			entry.Silence = state.Silence
+			entry.NowPlaying = state.NowPlaying
+		}
+		// If the collector hasn't started watching this station yet
+		// (just discovered, or collector unset), leave it as
+		// online/not-silent rather than flashing red -- ListStations
+		// itself just proved the audio server is reachable.
+		entries = append(entries, entry)
+	}
+	writeJSON(w, http.StatusOK, entries)
 }
 
-func stationStatusHandler(client *audioclient.Client) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		slug := r.PathValue("slug")
+func stationStatusHandler(w http.ResponseWriter, r *http.Request, s serverScope) {
+	slug := r.PathValue("slug")
 
-		status, err := client.GetStatus(r.Context(), slug)
-		if err != nil {
-			writeAudioClientError(w, err)
-			return
-		}
-		writeProtoJSON(w, http.StatusOK, status)
+	status, err := s.Client.GetStatus(r.Context(), slug)
+	if err != nil {
+		writeAudioClientError(w, err)
+		return
 	}
+	writeProtoJSON(w, http.StatusOK, status)
 }
 
-func unregisterStationHandler(client *audioclient.Client) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		slug := r.PathValue("slug")
+func unregisterStationHandler(w http.ResponseWriter, r *http.Request, s serverScope) {
+	slug := r.PathValue("slug")
 
-		if err := client.UnregisterStation(r.Context(), slug); err != nil {
-			writeAudioClientError(w, err)
-			return
-		}
-		w.WriteHeader(http.StatusNoContent)
+	if err := s.Client.UnregisterStation(r.Context(), slug); err != nil {
+		writeAudioClientError(w, err)
+		return
 	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // writeAudioClientError maps audioclient's sentinel errors (translated

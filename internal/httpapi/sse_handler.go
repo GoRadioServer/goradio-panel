@@ -5,12 +5,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/tmfksoft/goradio-panel/internal/audioclient"
 	"github.com/tmfksoft/goradio-panel/internal/auth"
 )
 
-func sseTokenHandler(secret []byte, ttl time.Duration) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func sseTokenHandler(secret []byte, ttl time.Duration) scopedHandler {
+	return func(w http.ResponseWriter, r *http.Request, s serverScope) {
 		claims, ok := sessionFromContext(r.Context())
 		if !ok {
 			http.Error(w, "unauthenticated", http.StatusUnauthorized)
@@ -22,7 +21,7 @@ func sseTokenHandler(secret []byte, ttl time.Duration) http.HandlerFunc {
 			return
 		}
 
-		token, expiresAt, err := auth.SignSSEToken(secret, claims.Username, slug, ttl)
+		token, expiresAt, err := auth.SignSSEToken(secret, claims.Username, s.ID, slug, ttl)
 		if err != nil {
 			http.Error(w, "failed to sign sse token", http.StatusInternalServerError)
 			return
@@ -39,11 +38,11 @@ func sseTokenHandler(secret []byte, ttl time.Duration) http.HandlerFunc {
 // by sseTokenHandler) rather than requireSession's Authorization header,
 // since browser EventSource cannot send custom headers -- see the SSE
 // auth design note in the plan.
-func sseHandler(client *audioclient.Client, secret []byte) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func sseHandler(secret []byte) scopedHandler {
+	return func(w http.ResponseWriter, r *http.Request, s serverScope) {
 		slug := r.PathValue("slug")
 
-		if _, err := auth.VerifySSEToken(secret, r.URL.Query().Get("token"), slug); err != nil {
+		if _, err := auth.VerifySSEToken(secret, r.URL.Query().Get("token"), s.ID, slug); err != nil {
 			http.Error(w, "invalid or expired sse token", http.StatusUnauthorized)
 			return
 		}
@@ -54,7 +53,7 @@ func sseHandler(client *audioclient.Client, secret []byte) http.HandlerFunc {
 			return
 		}
 
-		events, err := client.SubscribeEvents(r.Context(), slug)
+		events, err := s.Client.SubscribeEvents(r.Context(), slug)
 		if err != nil {
 			http.Error(w, "failed to subscribe to station events", http.StatusBadGateway)
 			return

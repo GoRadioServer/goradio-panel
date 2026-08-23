@@ -17,6 +17,10 @@ import (
 type SSEClaims struct {
 	jwt.RegisteredClaims
 	Username string `json:"username"`
+	// ServerID scopes the token to one audio server: slugs are only
+	// unique within a server, so without this a token minted for
+	// "k-dst" on one server would authorize "k-dst" on every other.
+	ServerID string `json:"server_id"`
 	Slug     string `json:"slug"`
 	Typ      string `json:"typ"`
 }
@@ -24,8 +28,8 @@ type SSEClaims struct {
 const sseTyp = "sse"
 
 // SignSSEToken mints a token authorizing username to open an EventSource
-// connection to slug's event stream.
-func SignSSEToken(secret []byte, username, slug string, ttl time.Duration) (string, time.Time, error) {
+// connection to slug's event stream on serverID.
+func SignSSEToken(secret []byte, username, serverID, slug string, ttl time.Duration) (string, time.Time, error) {
 	now := time.Now()
 	expiresAt := now.Add(ttl)
 	claims := SSEClaims{
@@ -35,6 +39,7 @@ func SignSSEToken(secret []byte, username, slug string, ttl time.Duration) (stri
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
 		},
 		Username: username,
+		ServerID: serverID,
 		Slug:     slug,
 		Typ:      sseTyp,
 	}
@@ -48,8 +53,8 @@ func SignSSEToken(secret []byte, username, slug string, ttl time.Duration) (stri
 }
 
 // VerifySSEToken checks an SSE token's signature, expiry, type, and that
-// it authorizes the given slug.
-func VerifySSEToken(secret []byte, tokenString, slug string) (*SSEClaims, error) {
+// it authorizes the given station on the given server.
+func VerifySSEToken(secret []byte, tokenString, serverID, slug string) (*SSEClaims, error) {
 	claims := &SSEClaims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -66,7 +71,7 @@ func VerifySSEToken(secret []byte, tokenString, slug string) (*SSEClaims, error)
 	if claims.Typ != sseTyp {
 		return nil, errors.New("wrong token type")
 	}
-	if claims.Slug != slug {
+	if claims.ServerID != serverID || claims.Slug != slug {
 		return nil, errors.New("token not authorized for this station")
 	}
 	return claims, nil

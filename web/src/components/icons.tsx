@@ -129,6 +129,12 @@ export const IconChevron = (p: Props) => (
   </Svg>
 )
 
+export const IconMenu = (p: Props) => (
+  <Svg {...p}>
+    <path d="M4 7h16M4 12h16M4 17h16" />
+  </Svg>
+)
+
 export const IconChevronDown = (p: Props) => (
   <Svg {...p}>
     <path d="m6 9 6 6 6-6" />

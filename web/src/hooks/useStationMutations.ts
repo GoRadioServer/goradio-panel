@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiJSON } from '../api/client'
+import { stationApiPath } from '../api/paths'
 import type {
   ClearQueueResponse,
   QueueTrackRequest,
@@ -13,19 +14,19 @@ import type {
 // Every mutation invalidates both this station's detail query and the
 // dashboard's station list, since queue/skip/unregister actions change
 // what both show.
-function useInvalidateStation(slug: string) {
+function useInvalidateStation(serverId: string, slug: string) {
   const queryClient = useQueryClient()
   return () => {
-    queryClient.invalidateQueries({ queryKey: ['station', slug] })
-    queryClient.invalidateQueries({ queryKey: ['stations'] })
+    queryClient.invalidateQueries({ queryKey: ['station', serverId, slug] })
+    queryClient.invalidateQueries({ queryKey: ['stations', serverId] })
   }
 }
 
-export function useQueueTrack(slug: string) {
-  const invalidate = useInvalidateStation(slug)
+export function useQueueTrack(serverId: string, slug: string) {
+  const invalidate = useInvalidateStation(serverId, slug)
   return useMutation({
     mutationFn: (req: QueueTrackRequest) =>
-      apiJSON<QueueTrackResponse>(`/api/stations/${encodeURIComponent(slug)}/queue`, {
+      apiJSON<QueueTrackResponse>(stationApiPath(serverId, slug, '/queue'), {
         method: 'POST',
         body: JSON.stringify(req),
       }),
@@ -33,23 +34,23 @@ export function useQueueTrack(slug: string) {
   })
 }
 
-export function useRemoveFromQueue(slug: string) {
-  const invalidate = useInvalidateStation(slug)
+export function useRemoveFromQueue(serverId: string, slug: string) {
+  const invalidate = useInvalidateStation(serverId, slug)
   return useMutation({
     mutationFn: (queueId: string) =>
       apiJSON<RemoveFromQueueResponse>(
-        `/api/stations/${encodeURIComponent(slug)}/queue/${encodeURIComponent(queueId)}`,
+        stationApiPath(serverId, slug, `/queue/${encodeURIComponent(queueId)}`),
         { method: 'DELETE' },
       ),
     onSuccess: invalidate,
   })
 }
 
-export function useClearQueue(slug: string) {
-  const invalidate = useInvalidateStation(slug)
+export function useClearQueue(serverId: string, slug: string) {
+  const invalidate = useInvalidateStation(serverId, slug)
   return useMutation({
     mutationFn: (stopCurrent: boolean) =>
-      apiJSON<ClearQueueResponse>(`/api/stations/${encodeURIComponent(slug)}/queue/clear`, {
+      apiJSON<ClearQueueResponse>(stationApiPath(serverId, slug, '/queue/clear'), {
         method: 'POST',
         body: JSON.stringify({ stop_current: stopCurrent }),
       }),
@@ -57,32 +58,32 @@ export function useClearQueue(slug: string) {
   })
 }
 
-export function useSkip(slug: string) {
-  const invalidate = useInvalidateStation(slug)
+export function useSkip(serverId: string, slug: string) {
+  const invalidate = useInvalidateStation(serverId, slug)
   return useMutation({
     mutationFn: () =>
-      apiJSON<SkipResponse>(`/api/stations/${encodeURIComponent(slug)}/skip`, { method: 'POST' }),
+      apiJSON<SkipResponse>(stationApiPath(serverId, slug, '/skip'), { method: 'POST' }),
     onSuccess: invalidate,
   })
 }
 
-export function useSkipTo(slug: string) {
-  const invalidate = useInvalidateStation(slug)
+export function useSkipTo(serverId: string, slug: string) {
+  const invalidate = useInvalidateStation(serverId, slug)
   return useMutation({
     mutationFn: (queueId: string) =>
       apiJSON<SkipToResponse>(
-        `/api/stations/${encodeURIComponent(slug)}/skip-to/${encodeURIComponent(queueId)}`,
+        stationApiPath(serverId, slug, `/skip-to/${encodeURIComponent(queueId)}`),
         { method: 'POST' },
       ),
     onSuccess: invalidate,
   })
 }
 
-export function useSeek(slug: string) {
-  const invalidate = useInvalidateStation(slug)
+export function useSeek(serverId: string, slug: string) {
+  const invalidate = useInvalidateStation(serverId, slug)
   return useMutation({
     mutationFn: (positionSeconds: number) =>
-      apiJSON<SeekResponse>(`/api/stations/${encodeURIComponent(slug)}/seek`, {
+      apiJSON<SeekResponse>(stationApiPath(serverId, slug, '/seek'), {
         method: 'POST',
         body: JSON.stringify({ position_seconds: Math.round(positionSeconds) }),
       }),
@@ -90,11 +91,11 @@ export function useSeek(slug: string) {
   })
 }
 
-export function useUnregisterStation(slug: string) {
-  const invalidate = useInvalidateStation(slug)
+export function useUnregisterStation(serverId: string, slug: string) {
+  const invalidate = useInvalidateStation(serverId, slug)
   return useMutation({
     mutationFn: () =>
-      apiJSON<void>(`/api/stations/${encodeURIComponent(slug)}/unregister`, { method: 'POST' }),
+      apiJSON<void>(stationApiPath(serverId, slug, '/unregister'), { method: 'POST' }),
     onSuccess: invalidate,
   })
 }

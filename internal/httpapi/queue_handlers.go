@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	audioserverv1 "github.com/tmfksoft/goradio-panel/gen/go/audioserver/v1"
-	"github.com/tmfksoft/goradio-panel/internal/audioclient"
 )
 
 type queueTrackRequest struct {
@@ -20,134 +19,122 @@ type queueTrackRequest struct {
 	Mode string `json:"mode"`
 }
 
-func queueTrackHandler(client *audioclient.Client) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		slug := r.PathValue("slug")
+func queueTrackHandler(w http.ResponseWriter, r *http.Request, s serverScope) {
+	slug := r.PathValue("slug")
 
-		var req queueTrackRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "invalid request body", http.StatusBadRequest)
-			return
-		}
-		if req.Source.Location == "" {
-			http.Error(w, "source.location is required", http.StatusBadRequest)
-			return
-		}
-
-		sourceType, err := parseTrackSourceType(req.Source.Type)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		mode, err := parseQueueMode(req.Mode)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		resp, err := client.QueueTrack(r.Context(), &audioserverv1.QueueTrackRequest{
-			Slug: slug,
-			Source: &audioserverv1.TrackSource{
-				Type:          sourceType,
-				Location:      req.Source.Location,
-				DisplayTitle:  req.Source.DisplayTitle,
-				DisplayArtist: req.Source.DisplayArtist,
-				CoverArtUrl:   req.Source.CoverArtURL,
-			},
-			Mode: mode,
-		})
-		if err != nil {
-			writeAudioClientError(w, err)
-			return
-		}
-		writeProtoJSON(w, http.StatusOK, resp)
+	var req queueTrackRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
 	}
+	if req.Source.Location == "" {
+		http.Error(w, "source.location is required", http.StatusBadRequest)
+		return
+	}
+
+	sourceType, err := parseTrackSourceType(req.Source.Type)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	mode, err := parseQueueMode(req.Mode)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	resp, err := s.Client.QueueTrack(r.Context(), &audioserverv1.QueueTrackRequest{
+		Slug: slug,
+		Source: &audioserverv1.TrackSource{
+			Type:          sourceType,
+			Location:      req.Source.Location,
+			DisplayTitle:  req.Source.DisplayTitle,
+			DisplayArtist: req.Source.DisplayArtist,
+			CoverArtUrl:   req.Source.CoverArtURL,
+		},
+		Mode: mode,
+	})
+	if err != nil {
+		writeAudioClientError(w, err)
+		return
+	}
+	writeProtoJSON(w, http.StatusOK, resp)
 }
 
-func removeFromQueueHandler(client *audioclient.Client) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		slug := r.PathValue("slug")
-		queueID := r.PathValue("queueId")
+func removeFromQueueHandler(w http.ResponseWriter, r *http.Request, s serverScope) {
+	slug := r.PathValue("slug")
+	queueID := r.PathValue("queueId")
 
-		resp, err := client.RemoveFromQueue(r.Context(), slug, queueID)
-		if err != nil {
-			writeAudioClientError(w, err)
-			return
-		}
-		writeProtoJSON(w, http.StatusOK, resp)
+	resp, err := s.Client.RemoveFromQueue(r.Context(), slug, queueID)
+	if err != nil {
+		writeAudioClientError(w, err)
+		return
 	}
+	writeProtoJSON(w, http.StatusOK, resp)
 }
 
-func clearQueueHandler(client *audioclient.Client) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		slug := r.PathValue("slug")
+func clearQueueHandler(w http.ResponseWriter, r *http.Request, s serverScope) {
+	slug := r.PathValue("slug")
 
-		var req struct {
-			StopCurrent bool `json:"stop_current"`
-		}
-		// A body is optional here (stop_current defaults to false); ignore
-		// a missing/empty body rather than rejecting the request.
-		_ = json.NewDecoder(r.Body).Decode(&req)
-
-		resp, err := client.ClearQueue(r.Context(), slug, req.StopCurrent)
-		if err != nil {
-			writeAudioClientError(w, err)
-			return
-		}
-		writeProtoJSON(w, http.StatusOK, resp)
+	var req struct {
+		StopCurrent bool `json:"stop_current"`
 	}
+	// A body is optional here (stop_current defaults to false); ignore
+	// a missing/empty body rather than rejecting the request.
+	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	resp, err := s.Client.ClearQueue(r.Context(), slug, req.StopCurrent)
+	if err != nil {
+		writeAudioClientError(w, err)
+		return
+	}
+	writeProtoJSON(w, http.StatusOK, resp)
 }
 
-func skipHandler(client *audioclient.Client) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		slug := r.PathValue("slug")
+func skipHandler(w http.ResponseWriter, r *http.Request, s serverScope) {
+	slug := r.PathValue("slug")
 
-		resp, err := client.Skip(r.Context(), slug)
-		if err != nil {
-			writeAudioClientError(w, err)
-			return
-		}
-		writeProtoJSON(w, http.StatusOK, resp)
+	resp, err := s.Client.Skip(r.Context(), slug)
+	if err != nil {
+		writeAudioClientError(w, err)
+		return
 	}
+	writeProtoJSON(w, http.StatusOK, resp)
 }
 
-func skipToHandler(client *audioclient.Client) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		slug := r.PathValue("slug")
-		queueID := r.PathValue("queueId")
+func skipToHandler(w http.ResponseWriter, r *http.Request, s serverScope) {
+	slug := r.PathValue("slug")
+	queueID := r.PathValue("queueId")
 
-		resp, err := client.SkipTo(r.Context(), slug, queueID)
-		if err != nil {
-			writeAudioClientError(w, err)
-			return
-		}
-		writeProtoJSON(w, http.StatusOK, resp)
+	resp, err := s.Client.SkipTo(r.Context(), slug, queueID)
+	if err != nil {
+		writeAudioClientError(w, err)
+		return
 	}
+	writeProtoJSON(w, http.StatusOK, resp)
 }
 
-func seekHandler(client *audioclient.Client) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		slug := r.PathValue("slug")
+func seekHandler(w http.ResponseWriter, r *http.Request, s serverScope) {
+	slug := r.PathValue("slug")
 
-		var req struct {
-			PositionSeconds int64 `json:"position_seconds"`
-		}
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "invalid request body", http.StatusBadRequest)
-			return
-		}
-		if req.PositionSeconds < 0 {
-			http.Error(w, "position_seconds must be >= 0", http.StatusBadRequest)
-			return
-		}
-
-		resp, err := client.Seek(r.Context(), slug, req.PositionSeconds)
-		if err != nil {
-			writeAudioClientError(w, err)
-			return
-		}
-		writeProtoJSON(w, http.StatusOK, resp)
+	var req struct {
+		PositionSeconds int64 `json:"position_seconds"`
 	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if req.PositionSeconds < 0 {
+		http.Error(w, "position_seconds must be >= 0", http.StatusBadRequest)
+		return
+	}
+
+	resp, err := s.Client.Seek(r.Context(), slug, req.PositionSeconds)
+	if err != nil {
+		writeAudioClientError(w, err)
+		return
+	}
+	writeProtoJSON(w, http.StatusOK, resp)
 }
 
 // parseTrackSourceType accepts both the short form ("HTTP_URL",

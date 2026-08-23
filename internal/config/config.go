@@ -9,6 +9,20 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// AudioServer is one audio server the panel talks to.
+type AudioServer struct {
+	// ID is the stable key used in URLs (/api/servers/{id}/...) and as the
+	// server_id recorded against captured listener stats, so renaming a
+	// server is safe but changing its ID orphans its history.
+	ID string `yaml:"id"`
+	// Name is the human label shown in the sidebar switcher; defaults to ID.
+	Name          string        `yaml:"name"`
+	GRPCAddr      string        `yaml:"grpc_addr"`
+	HTTPBaseURL   string        `yaml:"http_base_url"`
+	JWTSecret     string        `yaml:"jwt_secret"`
+	AdminTokenTTL time.Duration `yaml:"admin_token_ttl"`
+}
+
 type Config struct {
 	HTTP struct {
 		ListenAddr string `yaml:"listen_addr"`
@@ -19,12 +33,16 @@ type Config struct {
 		StaticDir string `yaml:"static_dir"`
 	} `yaml:"http"`
 
-	AudioServer struct {
-		GRPCAddr      string        `yaml:"grpc_addr"`
-		HTTPBaseURL   string        `yaml:"http_base_url"`
-		JWTSecret     string        `yaml:"jwt_secret"`
-		AdminTokenTTL time.Duration `yaml:"admin_token_ttl"`
-	} `yaml:"audioserver"`
+	// AudioServers is the set of audio servers the panel manages, shown in
+	// the sidebar's server switcher in the order given here. The first
+	// entry is the default -- what a bare /stations/... link resolves to.
+	AudioServers []AudioServer `yaml:"audioservers"`
+
+	// AudioServer is the pre-multi-server single-server block. Kept so
+	// existing panel.yaml files (and the AUDIOSERVER_* env vars) keep
+	// working: when audioservers is empty this is folded into it as the
+	// sole entry. Prefer audioservers for new configs.
+	AudioServer AudioServer `yaml:"audioserver"`
 
 	Auth struct {
 		SessionJWTSecret string        `yaml:"session_jwt_secret"`
@@ -45,6 +63,24 @@ type Config struct {
 		StationDiscoveryInterval time.Duration `yaml:"station_discovery_interval"`
 		FallbackSnapshotInterval time.Duration `yaml:"fallback_snapshot_interval"`
 	} `yaml:"stats"`
+
+	Updates struct {
+		// Enabled controls whether the panel reaches out to GitHub at all.
+		// Turn it off for an air-gapped deployment, or one that shouldn't
+		// make outbound calls -- the panel then just shows each server's
+		// reported version with nothing to compare it against.
+		//
+		// A pointer so an absent key can default to true while an explicit
+		// `enabled: false` is still honoured; read it via UpdatesEnabled.
+		Enabled *bool `yaml:"enabled"`
+		// GitHubRepo is the "owner/name" whose releases are the audio
+		// server's upstream.
+		GitHubRepo string `yaml:"github_repo"`
+		// CheckInterval is how often the latest release is re-fetched.
+		// GitHub allows 60 unauthenticated requests an hour per IP, so
+		// this stays well clear of that.
+		CheckInterval time.Duration `yaml:"check_interval"`
+	} `yaml:"updates"`
 
 	Logging struct {
 		Level string `yaml:"level"`
@@ -68,28 +104,88 @@ func Load(path string) (*Config, error) {
 	cfg.applyDefaults()
 	cfg.applyEnvOverrides()
 
-	if cfg.AudioServer.JWTSecret == "" {
-		return nil, fmt.Errorf("audioserver.jwt_secret is required")
-	}
-	if cfg.Auth.SessionJWTSecret == "" {
-		return nil, fmt.Errorf("auth.session_jwt_secret is required")
-	}
-	if cfg.BootstrapAdmin.Password == "" {
-		return nil, fmt.Errorf("bootstrap_admin.password is required")
+	if err := cfg.validate(); err != nil {
+		return nil, err
 	}
 
 	return cfg, nil
+}
+
+func (c *Config) validate() error {
+	if len(c.AudioServers) == 0 {
+		return fmt.Errorf("no audio servers configured: set audioservers (or the legacy audioserver block)")
+	}
+	seen := make(map[string]bool, len(c.AudioServers))
+	for i, s := range c.AudioServers {
+		if s.ID == "" {
+			return fmt.Errorf("audioservers[%d]: id is required", i)
+		}
+		if seen[s.ID] {
+			return fmt.Errorf("audioservers[%d]: duplicate id %q", i, s.ID)
+		}
+		seen[s.ID] = true
+		if s.JWTSecret == "" {
+			return fmt.Errorf("audioservers[%d] (%s): jwt_secret is required", i, s.ID)
+		}
+	}
+	if c.Auth.SessionJWTSecret == "" {
+		return fmt.Errorf("auth.session_jwt_secret is required")
+	}
+	if c.BootstrapAdmin.Password == "" {
+		return fmt.Errorf("bootstrap_admin.password is required")
+	}
+	return nil
+}
+
+func envOr(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
+// UpdatesEnabled reports whether the panel should check GitHub for audio
+// server releases. Defaults to true when the key is absent.
+func (c *Config) UpdatesEnabled() bool {
+	return c.Updates.Enabled == nil || *c.Updates.Enabled
+}
+
+// DefaultServerID is the server a bare, un-scoped request resolves to --
+// the first configured one.
+func (c *Config) DefaultServerID() string {
+	if len(c.AudioServers) == 0 {
+		return ""
+	}
+	return c.AudioServers[0].ID
 }
 
 func (c *Config) applyDefaults() {
 	if c.HTTP.ListenAddr == "" {
 		c.HTTP.ListenAddr = "0.0.0.0:8081"
 	}
-	if c.AudioServer.GRPCAddr == "" {
-		c.AudioServer.GRPCAddr = "localhost:9090"
+
+	// Fold the legacy single-server block into the list so everything
+	// downstream only has to deal with AudioServers. Done before the env
+	// overrides, which then target AudioServers[0] either way.
+	if len(c.AudioServers) == 0 && c.AudioServer != (AudioServer{}) {
+		legacy := c.AudioServer
+		if legacy.ID == "" {
+			legacy.ID = "default"
+		}
+		c.AudioServers = []AudioServer{legacy}
 	}
-	if c.AudioServer.AdminTokenTTL == 0 {
-		c.AudioServer.AdminTokenTTL = time.Hour
+
+	for i := range c.AudioServers {
+		s := &c.AudioServers[i]
+		if s.GRPCAddr == "" {
+			s.GRPCAddr = "localhost:9090"
+		}
+		if s.AdminTokenTTL == 0 {
+			s.AdminTokenTTL = time.Hour
+		}
+		if s.Name == "" {
+			s.Name = s.ID
+		}
 	}
 	if c.Auth.SessionTTL == 0 {
 		c.Auth.SessionTTL = 24 * time.Hour
@@ -109,6 +205,12 @@ func (c *Config) applyDefaults() {
 	if c.Stats.FallbackSnapshotInterval == 0 {
 		c.Stats.FallbackSnapshotInterval = 5 * time.Minute
 	}
+	if c.Updates.GitHubRepo == "" {
+		c.Updates.GitHubRepo = "tmfksoft/goradio"
+	}
+	if c.Updates.CheckInterval == 0 {
+		c.Updates.CheckInterval = 6 * time.Hour
+	}
 	if c.Logging.Level == "" {
 		c.Logging.Level = "info"
 	}
@@ -122,14 +224,32 @@ func (c *Config) applyEnvOverrides() {
 	if v := os.Getenv("PANEL_LISTEN_ADDR"); v != "" {
 		c.HTTP.ListenAddr = v
 	}
-	if v := os.Getenv("AUDIOSERVER_GRPC_ADDR"); v != "" {
-		c.AudioServer.GRPCAddr = v
-	}
-	if v := os.Getenv("AUDIOSERVER_HTTP_BASE_URL"); v != "" {
-		c.AudioServer.HTTPBaseURL = v
-	}
-	if v := os.Getenv("GORADIO_JWT_SECRET"); v != "" {
-		c.AudioServer.JWTSecret = v
+	// The AUDIOSERVER_*/GORADIO_JWT_SECRET vars predate multi-server
+	// support and address a single server, so they apply to the first
+	// entry -- enough to drive a one-server deployment entirely from the
+	// environment, as the Docker/k8s manifests do. A multi-server
+	// deployment needs them declared in the config file instead.
+	if len(c.AudioServers) > 0 {
+		s := &c.AudioServers[0]
+		if v := os.Getenv("AUDIOSERVER_GRPC_ADDR"); v != "" {
+			s.GRPCAddr = v
+		}
+		if v := os.Getenv("AUDIOSERVER_HTTP_BASE_URL"); v != "" {
+			s.HTTPBaseURL = v
+		}
+		if v := os.Getenv("GORADIO_JWT_SECRET"); v != "" {
+			s.JWTSecret = v
+		}
+	} else if v := os.Getenv("GORADIO_JWT_SECRET"); v != "" {
+		// Nothing in the file at all: let the env alone define one server.
+		c.AudioServers = []AudioServer{{
+			ID:            "default",
+			Name:          "default",
+			GRPCAddr:      envOr("AUDIOSERVER_GRPC_ADDR", "localhost:9090"),
+			HTTPBaseURL:   os.Getenv("AUDIOSERVER_HTTP_BASE_URL"),
+			JWTSecret:     v,
+			AdminTokenTTL: time.Hour,
+		}}
 	}
 	if v := os.Getenv("PANEL_SESSION_JWT_SECRET"); v != "" {
 		c.Auth.SessionJWTSecret = v

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import type { QueueMode, TrackSourceType } from '../api/types'
 import { useQueueTrack } from '../hooks/useStationMutations'
 import { IconPlus } from './icons'
+import { useServerId } from '../hooks/useServers'
 
 export function QueueTrackForm({ slug, onQueued }: { slug: string; onQueued?: () => void }) {
   const [advanced, setAdvanced] = useState(false)
@@ -12,7 +13,8 @@ export function QueueTrackForm({ slug, onQueued }: { slug: string; onQueued?: ()
   const [coverArtUrl, setCoverArtUrl] = useState('')
   const [mode, setMode] = useState<QueueMode>('APPEND')
 
-  const queueTrack = useQueueTrack(slug)
+  const serverId = useServerId()
+  const queueTrack = useQueueTrack(serverId, slug)
   const isLocal = advanced && sourceType === 'LOCAL_FILE'
 
   function onSubmit(e: FormEvent) {

@@ -3,9 +3,11 @@ import { useStations } from '../hooks/useStations'
 import { useMetadataKeys, useStationGroups } from '../hooks/useStationGroups'
 import { StationCard } from '../components/StationCard'
 import { IconStack } from '../components/icons'
+import { useServerId } from '../hooks/useServers'
 
 export function DashboardPage() {
-  const { data: stations, isLoading, isError } = useStations()
+  const serverId = useServerId()
+  const { data: stations, isLoading, isError } = useStations(serverId)
   const [groupBy, setGroupBy] = useState('')
 
   const list = useMemo(() => stations ?? [], [stations])

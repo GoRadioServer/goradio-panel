@@ -5,6 +5,7 @@ import { useTickingElapsed } from '../hooks/useTickingElapsed'
 import { useSeek } from '../hooks/useStationMutations'
 import { Artwork } from './Artwork'
 import { StreamPlayer } from './StreamPlayer'
+import { useServerId } from '../hooks/useServers'
 
 export function NowPlaying({ status }: { status: StationStatus }) {
   const current = status.current_track
@@ -35,7 +36,8 @@ export function NowPlaying({ status }: { status: StationStatus }) {
   // Not applicable to silence/nothing-playing or a live relay (no fixed
   // duration to seek within), matching the audio server's own Seek rules.
   const seekable = current != null && duration > 0
-  const seek = useSeek(status.slug)
+  const serverId = useServerId()
+  const seek = useSeek(serverId, status.slug)
   const [dragPercent, setDragPercent] = useState<number | null>(null)
   const [dragging, setDragging] = useState(false)
   const clearDragTimer = useRef<ReturnType<typeof setTimeout> | null>(null)

@@ -3,10 +3,12 @@ import { formatDuration, shortEnum, trackTitle } from '../api/format'
 import { useRemoveFromQueue, useSkipTo } from '../hooks/useStationMutations'
 import { Artwork } from './Artwork'
 import { IconSkip, IconTrash } from './icons'
+import { useServerId } from '../hooks/useServers'
 
 export function QueueList({ slug, queue }: { slug: string; queue: QueuedItemStatus[] }) {
-  const removeFromQueue = useRemoveFromQueue(slug)
-  const skipTo = useSkipTo(slug)
+  const serverId = useServerId()
+  const removeFromQueue = useRemoveFromQueue(serverId, slug)
+  const skipTo = useSkipTo(serverId, slug)
 
   if (queue.length === 0) {
     return <div className="empty">Queue is empty.</div>

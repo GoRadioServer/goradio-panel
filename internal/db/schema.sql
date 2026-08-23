@@ -7,8 +7,12 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS listener_stats (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  server_id      TEXT NOT NULL DEFAULT '',
   slug           TEXT NOT NULL,
   ts             TIMESTAMP NOT NULL,
   listener_count INTEGER NOT NULL
 );
-CREATE INDEX IF NOT EXISTS idx_listener_stats_slug_ts ON listener_stats (slug, ts);
+-- The index on server_id is created in Go, not here: against a database
+-- predating the column this file runs BEFORE the ALTER TABLE that adds it,
+-- so an index over server_id here would fail on exactly the upgrade path
+-- it exists to serve. See migrateListenerStatsServerID.

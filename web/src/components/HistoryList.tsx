@@ -4,6 +4,7 @@ import { useQueueTrack } from '../hooks/useStationMutations'
 import { Artwork } from './Artwork'
 import { SplitButton } from './SplitButton'
 import { IconRepeat } from './icons'
+import { useServerId } from '../hooks/useServers'
 
 // The API reports the full proto enum name (e.g. "TRACK_SOURCE_TYPE_HTTP_URL");
 // QueueTrackForm/useQueueTrack use the short form the backend also accepts.
@@ -21,7 +22,8 @@ const MODES: { mode: QueueMode; label: string; hint: string }[] = [
 ]
 
 export function HistoryList({ slug, history }: { slug: string; history: HistoryEntryStatus[] }) {
-  const queueTrack = useQueueTrack(slug)
+  const serverId = useServerId()
+  const queueTrack = useQueueTrack(serverId, slug)
 
   const requeue = (item: HistoryEntryStatus, mode: QueueMode) => {
     if (!item.source) return

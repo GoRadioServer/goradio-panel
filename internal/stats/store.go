@@ -24,20 +24,21 @@ func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
-func (s *Store) Insert(ctx context.Context, slug string, ts time.Time, listenerCount int64) error {
+func (s *Store) Insert(ctx context.Context, serverID, slug string, ts time.Time, listenerCount int64) error {
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO listener_stats (slug, ts, listener_count) VALUES (?, ?, ?)`,
-		slug, ts.UTC(), listenerCount)
+		`INSERT INTO listener_stats (server_id, slug, ts, listener_count) VALUES (?, ?, ?, ?)`,
+		serverID, slug, ts.UTC(), listenerCount)
 	if err != nil {
 		return fmt.Errorf("insert listener stat: %w", err)
 	}
 	return nil
 }
 
-func (s *Store) Query(ctx context.Context, slug string, from, to time.Time) ([]Point, error) {
+func (s *Store) Query(ctx context.Context, serverID, slug string, from, to time.Time) ([]Point, error) {
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT ts, listener_count FROM listener_stats WHERE slug = ? AND ts >= ? AND ts <= ? ORDER BY ts`,
-		slug, from.UTC(), to.UTC())
+		`SELECT ts, listener_count FROM listener_stats
+		   WHERE server_id = ? AND slug = ? AND ts >= ? AND ts <= ? ORDER BY ts`,
+		serverID, slug, from.UTC(), to.UTC())
 	if err != nil {
 		return nil, fmt.Errorf("query listener stats: %w", err)
 	}
