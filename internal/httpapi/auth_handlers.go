@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/tmfksoft/goradio-panel/internal/auth"
-	"github.com/tmfksoft/goradio-panel/internal/db"
+	"github.com/goradioserver/goradio-panel/internal/auth"
+	"github.com/goradioserver/goradio-panel/internal/db"
 )
 
 type loginRequest struct {

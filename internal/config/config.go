@@ -211,7 +211,7 @@ func (c *Config) applyDefaults() {
 		c.Stats.FallbackSnapshotInterval = 5 * time.Minute
 	}
 	if c.Updates.GitHubRepo == "" {
-		c.Updates.GitHubRepo = "tmfksoft/goradio"
+		c.Updates.GitHubRepo = "goradioserver/goradio"
 	}
 	if c.Updates.CheckInterval == 0 {
 		c.Updates.CheckInterval = 6 * time.Hour

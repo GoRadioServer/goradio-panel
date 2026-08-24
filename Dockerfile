@@ -15,7 +15,7 @@
 #     # (the baked config already serves the UI from /app/web/dist; only
 #     #  set PANEL_STATIC_DIR if you mount your own panel.yaml over it)
 #     -v panel-data:/data \
-#     ghcr.io/tmfksoft/goradio-panel
+#     ghcr.io/goradioserver/goradio-panel
 
 FROM node:22-alpine AS web-build
 WORKDIR /src/web

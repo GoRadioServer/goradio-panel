@@ -3,8 +3,8 @@ package httpapi
 import (
 	"net/http"
 
-	"github.com/tmfksoft/goradio-panel/internal/audioclient"
-	"github.com/tmfksoft/goradio-panel/internal/stats"
+	"github.com/goradioserver/goradio-panel/internal/audioclient"
+	"github.com/goradioserver/goradio-panel/internal/stats"
 )
 
 // stationListEntry is StationSummary plus the collector's live-monitoring

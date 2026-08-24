@@ -9,13 +9,13 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/tmfksoft/goradio-panel/internal/audioclient"
-	"github.com/tmfksoft/goradio-panel/internal/auth"
-	"github.com/tmfksoft/goradio-panel/internal/config"
-	"github.com/tmfksoft/goradio-panel/internal/db"
-	"github.com/tmfksoft/goradio-panel/internal/httpapi"
-	"github.com/tmfksoft/goradio-panel/internal/releases"
-	"github.com/tmfksoft/goradio-panel/internal/stats"
+	"github.com/goradioserver/goradio-panel/internal/audioclient"
+	"github.com/goradioserver/goradio-panel/internal/auth"
+	"github.com/goradioserver/goradio-panel/internal/config"
+	"github.com/goradioserver/goradio-panel/internal/db"
+	"github.com/goradioserver/goradio-panel/internal/httpapi"
+	"github.com/goradioserver/goradio-panel/internal/releases"
+	"github.com/goradioserver/goradio-panel/internal/stats"
 )
 
 func main() {

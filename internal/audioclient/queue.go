@@ -3,7 +3,7 @@ package audioclient
 import (
 	"context"
 
-	audioserverv1 "github.com/tmfksoft/goradio-panel/gen/go/audioserver/v1"
+	audioserverv1 "github.com/goradioserver/goradio-panel/gen/go/audioserver/v1"
 )
 
 func (c *Client) QueueTrack(ctx context.Context, req *audioserverv1.QueueTrackRequest) (*audioserverv1.QueueTrackResponse, error) {

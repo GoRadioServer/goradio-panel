@@ -1,6 +1,6 @@
 # goradio-panel
 
-A web admin panel for [gta-radio-golang](https://github.com/tmfksoft/goradio) (GoRadio):
+A web admin panel for [gta-radio-golang](https://github.com/goradioserver/goradio) (GoRadio):
 list stations, watch their live status and queue, manually queue tracks,
 skip/clear the queue, and see listener-count history over time -- none of
 which the audio server exposes a UI for itself.
@@ -20,7 +20,7 @@ or module dependency on that repo.
   `auth.jwt_secret`.
 - `web/` -- a React + TypeScript + Vite single-page app.
 - `gen/go/audioserver/v1` -- gRPC client stubs generated from the Buf
-  Schema Registry (`buf generate proto.prod.wtf/tmfksoft/goradio`), not
+  Schema Registry (`buf generate proto.prod.wtf/goradioserver/goradio`), not
   vendored `.proto` files.
 
 Since the audio server keeps no history of its own (listener counts are

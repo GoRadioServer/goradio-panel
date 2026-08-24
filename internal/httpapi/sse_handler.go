@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/tmfksoft/goradio-panel/internal/auth"
+	"github.com/goradioserver/goradio-panel/internal/auth"
 )
 
 func sseTokenHandler(secret []byte, ttl time.Duration) scopedHandler {

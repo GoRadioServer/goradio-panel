@@ -3,7 +3,7 @@ package httpapi
 import (
 	"net/http"
 
-	"github.com/tmfksoft/goradio-panel/internal/releases"
+	"github.com/goradioserver/goradio-panel/internal/releases"
 )
 
 type versionResponse struct {

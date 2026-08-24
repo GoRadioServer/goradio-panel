@@ -7,8 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	audioserverv1 "github.com/tmfksoft/goradio-panel/gen/go/audioserver/v1"
-	"github.com/tmfksoft/goradio-panel/internal/audioclient"
+	audioserverv1 "github.com/goradioserver/goradio-panel/gen/go/audioserver/v1"
+	"github.com/goradioserver/goradio-panel/internal/audioclient"
 )
 
 // LiveState is a station's connectivity/playback snapshot as last

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/tmfksoft/goradio-panel/internal/auth"
+	"github.com/goradioserver/goradio-panel/internal/auth"
 )
 
 type sessionContextKey struct{}

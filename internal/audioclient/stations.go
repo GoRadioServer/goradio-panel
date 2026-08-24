@@ -4,7 +4,7 @@ import (
 	"context"
 	"sort"
 
-	audioserverv1 "github.com/tmfksoft/goradio-panel/gen/go/audioserver/v1"
+	audioserverv1 "github.com/goradioserver/goradio-panel/gen/go/audioserver/v1"
 )
 
 // StationSummary is the per-station listing entry, scoped to whatever the

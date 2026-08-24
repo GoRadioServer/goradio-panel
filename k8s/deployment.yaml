@@ -31,7 +31,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: goradio-panel
-          image: ghcr.io/tmfksoft/goradio-panel:latest # replace with your pushed image
+          image: ghcr.io/goradioserver/goradio-panel:latest # replace with your pushed image
           ports:
             - name: http
               containerPort: 8081

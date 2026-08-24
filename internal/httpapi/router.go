@@ -13,9 +13,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/tmfksoft/goradio-panel/internal/audioclient"
-	"github.com/tmfksoft/goradio-panel/internal/releases"
-	"github.com/tmfksoft/goradio-panel/internal/stats"
+	"github.com/goradioserver/goradio-panel/internal/audioclient"
+	"github.com/goradioserver/goradio-panel/internal/releases"
+	"github.com/goradioserver/goradio-panel/internal/stats"
 )
 
 // Deps bundles the dependencies handlers need, so router.go stays a plain

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/tmfksoft/goradio-panel/internal/stats"
+	"github.com/goradioserver/goradio-panel/internal/stats"
 )
 
 func statsHandler(store *stats.Store) scopedHandler {

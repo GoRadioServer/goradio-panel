@@ -11,7 +11,7 @@ import (
 // internal/auth.Claims expects ({sub, iat, exp, slugs, read_only}) so a
 // token we mint here verifies against its HS256 auth.jwt_secret. This is
 // deliberately duplicated rather than imported -- goradio-panel has no
-// module dependency on github.com/tmfksoft/goradio, only a shared network
+// module dependency on github.com/goradioserver/goradio, only a shared network
 // contract.
 type audioServerClaims struct {
 	jwt.RegisteredClaims

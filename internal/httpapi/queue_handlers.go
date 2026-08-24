@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	audioserverv1 "github.com/tmfksoft/goradio-panel/gen/go/audioserver/v1"
+	audioserverv1 "github.com/goradioserver/goradio-panel/gen/go/audioserver/v1"
 )
 
 type queueTrackRequest struct {

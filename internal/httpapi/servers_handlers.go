@@ -3,7 +3,7 @@ package httpapi
 import (
 	"net/http"
 
-	"github.com/tmfksoft/goradio-panel/internal/audioclient"
+	"github.com/goradioserver/goradio-panel/internal/audioclient"
 )
 
 type serverEntry struct {

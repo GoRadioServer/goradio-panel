@@ -10,9 +10,9 @@ docker-build:
 
 # Regenerate gen/go/audioserver/v1 from the Buf Schema Registry -- this
 # repo has no local .proto files, it consumes gta-radio-golang's published
-# schema at proto.prod.wtf/tmfksoft/goradio.
+# schema at proto.prod.wtf/goradioserver/goradio.
 proto:
-	buf generate proto.prod.wtf/tmfksoft/goradio
+	buf generate proto.prod.wtf/goradioserver/goradio
 
 web:
 	cd web && npm install && npm run dev
