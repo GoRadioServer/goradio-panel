@@ -1411,6 +1411,19 @@ input[type='checkbox'] {
   font-size: 12px;
 }
 
+.notice {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.notice-warn {
+  background: var(--warn-bg);
+  color: var(--warn);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
 /* --------------------------------------------------------------- login */
 
 .login-page {

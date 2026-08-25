@@ -42,3 +42,33 @@ func (c *Client) ListStations(ctx context.Context) ([]StationSummary, error) {
 	sort.Slice(stations, func(i, j int) bool { return stations[i].Slug < stations[j].Slug })
 	return stations, nil
 }
+
+// RegisteredStation is what RegisterStation reports back after creating
+// (or re-registering) a station.
+type RegisteredStation struct {
+	Slug         string `json:"slug"`
+	StreamURL    string `json:"stream_url"`
+	ReRegistered bool   `json:"re_registered"`
+}
+
+// RegisterStation creates a station directly from the panel, with no
+// controller behind it -- the audio server treats this exactly like any
+// other RegisterStation call (e.g. a controller reconnecting), so a real
+// controller can take over the same slug later without disruption; it
+// just re-registers over whatever the panel put there.
+func (c *Client) RegisterStation(ctx context.Context, slug, name, description, logoURL string) (RegisteredStation, error) {
+	resp, err := c.grpcClient.RegisterStation(c.authContext(ctx), &audioserverv1.RegisterStationRequest{
+		Slug:        slug,
+		Name:        name,
+		Description: description,
+		LogoUrl:     logoURL,
+	})
+	if err != nil {
+		return RegisteredStation{}, mapErr(err)
+	}
+	return RegisteredStation{
+		Slug:         resp.GetSlug(),
+		StreamURL:    resp.GetStreamUrl(),
+		ReRegistered: resp.GetReRegistered(),
+	}, nil
+}

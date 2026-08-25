@@ -23,6 +23,18 @@ An audio server config can also set a `default_grouping` (see
 [Configuration](../getting-started/configuration.md#audioservers)) so a
 fresh browser lands on a sensible default instead of an ungrouped list.
 
+## Creating a station
+
+The **New station** button registers a station directly on the audio
+server, the same way a controller's own `radio.register` call would —
+just a slug, a display name, and optionally a description and logo URL.
+It carries no controller and no logic: it won't queue anything on its own,
+so it plays nothing until a track is manually queued (from the
+[Media Browser](media.md) or a station page's queue form) or a real
+controller registers the same slug and takes over — which it can do at
+any time, cleanly, since re-registering an existing slug just updates it
+in place.
+
 ## Station cards
 
 Each card shows the station's name, artwork (or a fallback), on-air/silence

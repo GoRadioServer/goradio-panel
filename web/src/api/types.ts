@@ -137,6 +137,22 @@ export interface MintTokenResponse {
   expires_at: string
 }
 
+export interface CreateStationRequest {
+  slug: string
+  name: string
+  description?: string
+  logo_url?: string
+}
+
+export interface CreateStationResponse {
+  slug: string
+  stream_url: string
+  // True if this slug was already registered (by a controller or a
+  // previous panel registration) and got updated in place rather than
+  // created fresh.
+  re_registered: boolean
+}
+
 export interface DirectoryEntry {
   name: string
   is_dir: boolean
