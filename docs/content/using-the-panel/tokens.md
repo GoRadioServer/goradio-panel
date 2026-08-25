@@ -10,6 +10,14 @@ never stores a token it mints; it's shown once, on screen.
 
 - **Scope** — either every station (`*`), or a specific set you pick by
   checkbox from the currently registered stations.
+- **Directories** (optional) — restricts which `audio_root` directories the
+  token may queue from or browse, recursively (granting `GTASA/KROSE`
+  covers everything under it). Leave empty for no restriction — this is
+  the default and matches every token minted before this field existed.
+  Pick directories either by clicking **Browse…** to check them off a live
+  listing of the audio server's `audio_root`, or by typing/pasting paths
+  directly into the text field below it, one per line — both feed the
+  same list, and can be used together.
 - **Subject** (optional) — a free-text label embedded in the token,
   useful for telling tokens apart later if you're auditing what's been
   issued.
