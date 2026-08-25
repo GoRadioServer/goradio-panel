@@ -1,9 +1,13 @@
 # goradio-panel
 
-A web admin panel for [gta-radio-golang](https://github.com/goradioserver/goradio) (GoRadio):
+A web admin panel for [GoRadio](https://github.com/goradioserver/goradio):
 list stations, watch their live status and queue, manually queue tracks,
 skip/clear the queue, and see listener-count history over time -- none of
 which the audio server exposes a UI for itself.
+
+**📖 [Full documentation](https://goradioserver.github.io/goradio-panel/)** —
+installation, every config field, a tour of each page, and Docker/Kubernetes
+deployment.
 
 The panel has its own username/password accounts (separate from the audio
 server's station-scoped JWTs) and talks to the audio server purely over its
