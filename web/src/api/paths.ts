@@ -13,6 +13,11 @@ export function stationApiPath(serverId: string, slug: string, suffix = ''): str
   return apiPath(serverId, `/stations/${encodeURIComponent(slug)}${suffix}`)
 }
 
+/** The API path to browse one directory under a server's audio_root. */
+export function browseApiPath(serverId: string, path: string): string {
+  return apiPath(serverId, `/browse?path=${encodeURIComponent(path)}`)
+}
+
 /** The in-app route for a server's dashboard. */
 export function serverRoute(serverId: string): string {
   return `/servers/${encodeURIComponent(serverId)}`

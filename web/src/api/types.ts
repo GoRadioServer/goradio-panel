@@ -123,6 +123,10 @@ export interface ListenerStatPoint {
 
 export interface MintTokenRequest {
   slugs: string[]
+  // Directories under audio_root this token may queue/browse, recursively
+  // (an entry of "GTASA/KROSE" also covers everything under it). Omit or
+  // leave empty for an unrestricted token.
+  dirs?: string[]
   subject?: string
   ttl?: string
   read_only: boolean
@@ -131,6 +135,15 @@ export interface MintTokenRequest {
 export interface MintTokenResponse {
   token: string
   expires_at: string
+}
+
+export interface DirectoryEntry {
+  name: string
+  is_dir: boolean
+  // "/"-separated, relative to audio_root -- usable directly as a
+  // QueueTrackRequest source.location for a LOCAL_FILE source.
+  path: string
+  size_bytes: number
 }
 
 export interface StationEvent {

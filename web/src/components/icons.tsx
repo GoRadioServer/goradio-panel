@@ -173,3 +173,17 @@ export const IconCheck = (p: Props) => (
     <path d="m5 13 4 4L19 7" />
   </Svg>
 )
+
+export const IconFolder = (p: Props) => (
+  <Svg {...p}>
+    <path d="M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6Z" />
+  </Svg>
+)
+
+export const IconMusicNote = (p: Props) => (
+  <Svg {...p}>
+    <path d="M9 18V5l11-2v13" />
+    <circle cx="6" cy="18" r="3" />
+    <circle cx="17" cy="16" r="3" />
+  </Svg>
+)

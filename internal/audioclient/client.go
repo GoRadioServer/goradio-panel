@@ -129,8 +129,9 @@ func (c *Client) HTTPBaseURL() string {
 // shared secret this client uses for its own admin token -- lets the
 // panel issue tokens for controllers/observers (equivalent to
 // `radio tokengen`) without exposing that secret outside this package.
-func (c *Client) MintStationToken(slugs []string, subject string, ttl time.Duration, readOnly bool) (string, error) {
-	return auth.MintStationToken(c.jwtSecret, slugs, subject, ttl, readOnly)
+// dirs is nil/empty for an unrestricted token, same as omitting -dirs.
+func (c *Client) MintStationToken(slugs []string, dirs []string, subject string, ttl time.Duration, readOnly bool) (string, error) {
+	return auth.MintStationToken(c.jwtSecret, slugs, dirs, subject, ttl, readOnly)
 }
 
 func (c *Client) refreshToken() error {

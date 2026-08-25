@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react'
-import type { QueueMode, TrackSourceType } from '../api/types'
+import type { DirectoryEntry, QueueMode, TrackSourceType } from '../api/types'
 import { useQueueTrack } from '../hooks/useStationMutations'
 import { IconPlus } from './icons'
 import { useServerId } from '../hooks/useServers'
+import { Modal } from './Modal'
+import { DirectoryBrowser } from './DirectoryBrowser'
 
 export function QueueTrackForm({ slug, onQueued }: { slug: string; onQueued?: () => void }) {
   const [advanced, setAdvanced] = useState(false)
@@ -12,6 +14,7 @@ export function QueueTrackForm({ slug, onQueued }: { slug: string; onQueued?: ()
   const [artist, setArtist] = useState('')
   const [coverArtUrl, setCoverArtUrl] = useState('')
   const [mode, setMode] = useState<QueueMode>('APPEND')
+  const [browsing, setBrowsing] = useState(false)
 
   const serverId = useServerId()
   const queueTrack = useQueueTrack(serverId, slug)
@@ -40,6 +43,14 @@ export function QueueTrackForm({ slug, onQueued }: { slug: string; onQueued?: ()
         },
       },
     )
+  }
+
+  function onSelectFile(entry: DirectoryEntry) {
+    setAdvanced(true)
+    setSourceType('LOCAL_FILE')
+    setLocation(entry.path)
+    if (!title) setTitle(entry.name.replace(/\.[^.]+$/, ''))
+    setBrowsing(false)
   }
 
   return (
@@ -101,9 +112,9 @@ export function QueueTrackForm({ slug, onQueued }: { slug: string; onQueued?: ()
           {advanced ? '← Use a URL instead' : 'Advanced: queue a local file path'}
         </button>
         {isLocal && (
-          <span className="field-hint">
-            The panel can’t browse the audio server’s filesystem — enter a path you know exists.
-          </span>
+          <button type="button" className="ghost sm" onClick={() => setBrowsing(true)}>
+            Browse…
+          </button>
         )}
       </div>
 
@@ -111,6 +122,12 @@ export function QueueTrackForm({ slug, onQueued }: { slug: string; onQueued?: ()
         <p className="error-text" style={{ marginBottom: 0 }}>
           {(queueTrack.error as Error).message}
         </p>
+      )}
+
+      {browsing && (
+        <Modal title="Browse audio files" onClose={() => setBrowsing(false)}>
+          <DirectoryBrowser serverId={serverId} mode="queue" onSelectFile={onSelectFile} />
+        </Modal>
       )}
     </form>
   )

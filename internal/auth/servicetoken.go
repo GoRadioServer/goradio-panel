@@ -8,30 +8,36 @@ import (
 )
 
 // audioServerClaims reproduces the exact claim shape gta-radio-golang's own
-// internal/auth.Claims expects ({sub, iat, exp, slugs, read_only}) so a
-// token we mint here verifies against its HS256 auth.jwt_secret. This is
+// internal/auth.Claims expects ({sub, iat, exp, slugs, dirs, read_only}) so
+// a token we mint here verifies against its HS256 auth.jwt_secret. This is
 // deliberately duplicated rather than imported -- goradio-panel has no
 // module dependency on github.com/goradioserver/goradio, only a shared network
-// contract.
+// contract. Keep this in sync with that repo's internal/auth.Claims --
+// dirs was added there to let a token be scoped to specific directories
+// under audio_root (recursively: an entry of "GTASA/KROSE" also covers
+// everything under it), independent of which station slugs it covers.
 type audioServerClaims struct {
 	jwt.RegisteredClaims
 	Slugs    []string `json:"slugs"`
+	Dirs     []string `json:"dirs,omitempty"`
 	ReadOnly bool     `json:"read_only,omitempty"`
 }
 
-// MintAdminToken signs a token authorizing every station slug ("*"),
-// read-write, for the panel's own gRPC calls against the audio server.
+// MintAdminToken signs a token authorizing every station slug ("*") and
+// every directory (nil Dirs, same as omitting it -- unrestricted), for the
+// panel's own gRPC calls against the audio server, including browsing.
 func MintAdminToken(secret []byte, ttl time.Duration) (string, error) {
-	return MintStationToken(secret, []string{"*"}, "goradio-panel", ttl, false)
+	return MintStationToken(secret, []string{"*"}, nil, "goradio-panel", ttl, false)
 }
 
 // MintStationToken signs an audio-server-compatible token for the given
-// slugs (exact slugs or filepath.Match globs, e.g. "*" for every station),
-// equivalent to `radio tokengen -secret ... [-subject ...] [-ttl ...]
-// [-readonly] <slug...>` -- lets an operator mint a token for a
+// slugs (exact slugs or filepath.Match globs, e.g. "*" for every station)
+// and, optionally, directories (nil/empty means unrestricted), equivalent
+// to `radio tokengen -secret ... [-subject ...] [-ttl ...] [-readonly]
+// [-dirs ...] <slug...>` -- lets an operator mint a token for a
 // controller/observer without needing shell access to the audio server
 // itself.
-func MintStationToken(secret []byte, slugs []string, subject string, ttl time.Duration, readOnly bool) (string, error) {
+func MintStationToken(secret []byte, slugs []string, dirs []string, subject string, ttl time.Duration, readOnly bool) (string, error) {
 	now := time.Now()
 	claims := audioServerClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -40,6 +46,7 @@ func MintStationToken(secret []byte, slugs []string, subject string, ttl time.Du
 			ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
 		},
 		Slugs:    slugs,
+		Dirs:     dirs,
 		ReadOnly: readOnly,
 	}
 

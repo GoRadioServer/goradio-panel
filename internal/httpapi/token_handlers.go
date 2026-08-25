@@ -10,9 +10,14 @@ import (
 type mintTokenRequest struct {
 	// Exact slugs or filepath.Match globs (e.g. "*" for every station),
 	// matching the audio server's own auth.Claims.Slugs semantics.
-	Slugs    []string `json:"slugs"`
-	Subject  string   `json:"subject"`
-	TTL      string   `json:"ttl"` // Go duration string, e.g. "24h"
+	Slugs   []string `json:"slugs"`
+	Subject string   `json:"subject"`
+	TTL     string   `json:"ttl"` // Go duration string, e.g. "24h"
+	// Directories under audio_root this token may queue/browse,
+	// recursively (an entry of "GTASA/KROSE" also covers everything
+	// under it) -- omitted or empty means unrestricted, matching the
+	// audio server's own auth.Claims.Dirs semantics.
+	Dirs     []string `json:"dirs,omitempty"`
 	ReadOnly bool     `json:"read_only"`
 }
 
@@ -44,6 +49,13 @@ func mintTokenHandler(w http.ResponseWriter, r *http.Request, s serverScope) {
 		return
 	}
 
+	var dirs []string
+	for _, d := range req.Dirs {
+		if d = strings.TrimSpace(d); d != "" {
+			dirs = append(dirs, d)
+		}
+	}
+
 	subject := strings.TrimSpace(req.Subject)
 	if subject == "" {
 		subject = "goradio-panel"
@@ -63,7 +75,7 @@ func mintTokenHandler(w http.ResponseWriter, r *http.Request, s serverScope) {
 		ttl = parsed
 	}
 
-	token, err := s.Client.MintStationToken(slugs, subject, ttl, req.ReadOnly)
+	token, err := s.Client.MintStationToken(slugs, dirs, subject, ttl, req.ReadOnly)
 	if err != nil {
 		http.Error(w, "failed to mint token", http.StatusInternalServerError)
 		return

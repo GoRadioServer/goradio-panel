@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { useStations } from '../hooks/useStations'
 import { useMintToken } from '../hooks/useTokens'
-import { IconCheck, IconCopy, IconKey } from '../components/icons'
+import { IconCheck, IconCopy, IconKey, IconX } from '../components/icons'
 import { useServerId } from '../hooks/useServers'
+import { Modal } from '../components/Modal'
+import { DirectoryBrowser } from '../components/DirectoryBrowser'
 
 type Scope = 'all' | 'specific'
 
@@ -13,6 +15,9 @@ export function TokensPage() {
 
   const [scope, setScope] = useState<Scope>('all')
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>([])
+  const [selectedDirs, setSelectedDirs] = useState<string[]>([])
+  const [dirsText, setDirsText] = useState('')
+  const [browsingDirs, setBrowsingDirs] = useState(false)
   const [subject, setSubject] = useState('')
   const [ttl, setTtl] = useState('24h')
   const [readOnly, setReadOnly] = useState(false)
@@ -22,11 +27,25 @@ export function TokensPage() {
     setSelectedSlugs((prev) => (prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]))
   }
 
+  function toggleDir(path: string) {
+    setSelectedDirs((prev) => (prev.includes(path) ? prev.filter((d) => d !== path) : [...prev, path]))
+  }
+
+  function removeDir(path: string) {
+    setSelectedDirs((prev) => prev.filter((d) => d !== path))
+  }
+
   function onSubmit(e: FormEvent) {
     e.preventDefault()
     setCopied(false)
+    const typedDirs = dirsText
+      .split('\n')
+      .map((d) => d.trim())
+      .filter(Boolean)
+    const dirs = Array.from(new Set([...selectedDirs, ...typedDirs]))
     mintToken.mutate({
       slugs: scope === 'all' ? ['*'] : selectedSlugs,
+      dirs: dirs.length > 0 ? dirs : undefined,
       subject: subject.trim() || undefined,
       ttl: ttl.trim() || undefined,
       read_only: readOnly,
@@ -93,6 +112,42 @@ export function TokensPage() {
                 </div>
               )}
 
+              <div className="field" style={{ marginTop: 11 }}>
+                <label>Directories (optional)</label>
+                <div className="field-hint" style={{ marginBottom: 6 }}>
+                  Restricts which audio_root directories this token may queue from or browse,
+                  recursively -- leave empty for no restriction.
+                </div>
+                {selectedDirs.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                    {selectedDirs.map((d) => (
+                      <span className="chip" key={d}>
+                        {d}
+                        <button
+                          type="button"
+                          onClick={() => removeDir(d)}
+                          aria-label={`Remove ${d}`}
+                          style={{ background: 'none', border: 'none', padding: 0, display: 'flex', cursor: 'pointer' }}
+                        >
+                          <IconX size={11} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <button type="button" className="ghost sm" onClick={() => setBrowsingDirs(true)}>
+                    Browse…
+                  </button>
+                </div>
+                <textarea
+                  rows={3}
+                  value={dirsText}
+                  onChange={(e) => setDirsText(e.target.value)}
+                  placeholder={'One directory per line, e.g.\nGTASA/KROSE'}
+                />
+              </div>
+
               <div className="form-row" style={{ marginTop: 11 }}>
                 <div className="field">
                   <label htmlFor="subject">Subject (optional)</label>
@@ -129,6 +184,17 @@ export function TokensPage() {
                 </p>
               )}
             </form>
+
+            {browsingDirs && (
+              <Modal title="Browse directories" onClose={() => setBrowsingDirs(false)}>
+                <DirectoryBrowser
+                  serverId={serverId}
+                  mode="scope"
+                  selectedDirs={selectedDirs}
+                  onToggleDir={toggleDir}
+                />
+              </Modal>
+            )}
           </div>
         </div>
 

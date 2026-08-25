@@ -1318,7 +1318,8 @@ input[type='range']::-moz-range-thumb {
 input[type='text'],
 input[type='password'],
 input:not([type]),
-select {
+select,
+textarea {
   font: inherit;
   font-size: 13px;
   width: 100%;
@@ -1330,12 +1331,18 @@ select {
   transition: border-color 0.12s, box-shadow 0.12s;
 }
 
-input::placeholder {
+textarea {
+  resize: vertical;
+}
+
+input::placeholder,
+textarea::placeholder {
   color: var(--text-faint);
 }
 
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   outline: none;
   border-color: var(--accent-border);
   box-shadow: 0 0 0 3px var(--accent-bg);
