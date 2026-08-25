@@ -82,6 +82,7 @@ nav:
       - Dashboard: using-the-panel/dashboard.md
       - Stations: using-the-panel/stations.md
       - Tokens: using-the-panel/tokens.md
+      - Media Browser: using-the-panel/media.md
       - Users: using-the-panel/users.md
   - Deployment:
       - Docker: deployment/docker.md

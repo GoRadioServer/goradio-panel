@@ -13,11 +13,12 @@ import {
   useMetadataKeys,
   useStationGroups,
 } from '../hooks/useStationGroups'
-import { serverRoute, stationRoute } from '../api/paths'
+import { mediaRoute, serverRoute, stationRoute } from '../api/paths'
 import type { StationSummary } from '../api/types'
 import { Artwork } from './Artwork'
 import {
   IconChevronDown,
+  IconFolder,
   IconKey,
   IconMenu,
   IconRadio,
@@ -147,6 +148,7 @@ function Sidebar({
 
   const onDashboard = pathname === serverRoute(serverId)
   const onTokens = pathname === `${serverRoute(serverId)}/tokens`
+  const onMedia = pathname === mediaRoute(serverId)
 
   return (
     // onClickCapture rather than per-link handlers: every navigation in
@@ -185,6 +187,10 @@ function Sidebar({
       <Link className={`nav-item${onTokens ? ' active' : ''}`} to={`${serverRoute(serverId)}/tokens`}>
         <IconKey size={15} />
         Tokens
+      </Link>
+      <Link className={`nav-item${onMedia ? ' active' : ''}`} to={mediaRoute(serverId)}>
+        <IconFolder size={15} />
+        Media
       </Link>
 
       {list.length > 0 && (
@@ -260,7 +266,14 @@ function Breadcrumbs() {
   const station = stations?.find((s) => s.slug === slug)
   const onStation = Boolean(slug)
   const serverName = servers?.find((s) => s.id === serverId)?.name ?? serverId
-  const label = pathname === '/users' ? 'Users' : pathname.endsWith('/tokens') ? 'Tokens' : 'Stations'
+  const label =
+    pathname === '/users'
+      ? 'Users'
+      : pathname.endsWith('/tokens')
+        ? 'Tokens'
+        : pathname.endsWith('/media')
+          ? 'Media'
+          : 'Stations'
 
   return (
     <div className="crumbs">

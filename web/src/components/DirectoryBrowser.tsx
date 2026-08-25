@@ -13,6 +13,10 @@ interface Props {
   onSelectFile?: (entry: DirectoryEntry) => void
   selectedDirs?: string[]
   onToggleDir?: (path: string) => void
+  /** 'queue' mode only -- shows files but makes them non-interactive, e.g.
+   *  before a target station is chosen elsewhere on the page. Folders stay
+   *  browsable either way. */
+  disableFileSelect?: boolean
 }
 
 const crumbLinkStyle: React.CSSProperties = {
@@ -30,7 +34,14 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export function DirectoryBrowser({ serverId, mode, onSelectFile, selectedDirs, onToggleDir }: Props) {
+export function DirectoryBrowser({
+  serverId,
+  mode,
+  onSelectFile,
+  selectedDirs,
+  onToggleDir,
+  disableFileSelect,
+}: Props) {
   const [currentPath, setCurrentPath] = useState('')
   const { data: entries, isLoading, isError } = useBrowse(serverId, currentPath)
 
@@ -74,16 +85,18 @@ export function DirectoryBrowser({ serverId, mode, onSelectFile, selectedDirs, o
             !isError &&
             entries?.map((entry) => {
               const selected = mode === 'scope' && entry.is_dir && (selectedDirs?.includes(entry.path) ?? false)
-              const clickable = entry.is_dir || mode === 'queue'
+              const fileSelectable = mode === 'queue' && !disableFileSelect
+              const clickable = entry.is_dir || fileSelectable
+              const dimmed = !entry.is_dir && (mode === 'scope' || !fileSelectable)
               return (
                 <div
                   key={entry.path}
                   className="row"
-                  style={{ cursor: clickable ? 'pointer' : 'default', opacity: !entry.is_dir && mode === 'scope' ? 0.55 : 1 }}
+                  style={{ cursor: clickable ? 'pointer' : 'default', opacity: dimmed ? 0.55 : 1 }}
                   onClick={() => {
                     if (entry.is_dir) {
                       setCurrentPath(entry.path)
-                    } else if (mode === 'queue') {
+                    } else if (fileSelectable) {
                       onSelectFile?.(entry)
                     }
                   }}

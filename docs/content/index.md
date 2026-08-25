@@ -25,6 +25,8 @@ more running audio servers and it gives you:
 - A **tokens** page to mint scoped JWTs for station controllers and
   read-only observers — the same tokens `radio tokengen` produces, without
   needing a shell open next to the audio server.
+- A **media browser** to explore the audio server's `audio_root` and queue
+  a file straight to a station, without knowing its path in advance.
 - **User accounts** for the panel itself, independent of any station's
   audio-server token.
 

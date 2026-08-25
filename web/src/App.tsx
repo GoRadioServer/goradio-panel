@@ -9,6 +9,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { StationPage } from './pages/StationPage'
 import { UsersPage } from './pages/UsersPage'
 import { TokensPage } from './pages/TokensPage'
+import { MediaPage } from './pages/MediaPage'
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth()
@@ -58,6 +59,7 @@ export default function App() {
               <Route path="/servers/:server" element={shell(<DashboardPage />)} />
               <Route path="/servers/:server/stations/:slug" element={shell(<StationPage />)} />
               <Route path="/servers/:server/tokens" element={shell(<TokensPage />)} />
+              <Route path="/servers/:server/media" element={shell(<MediaPage />)} />
 
               <Route path="/users" element={shell(<UsersPage />)} />
             </Routes>

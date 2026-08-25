@@ -23,6 +23,11 @@ export function serverRoute(serverId: string): string {
   return `/servers/${encodeURIComponent(serverId)}`
 }
 
+/** The in-app route for a server's media browser. */
+export function mediaRoute(serverId: string): string {
+  return `${serverRoute(serverId)}/media`
+}
+
 /** The in-app route for one station on one server. */
 export function stationRoute(serverId: string, slug: string): string {
   return `${serverRoute(serverId)}/stations/${encodeURIComponent(slug)}`
