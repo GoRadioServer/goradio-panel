@@ -2,11 +2,30 @@ import { useEffect, useRef } from 'react'
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view'
 import { EditorState } from '@codemirror/state'
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
-import { StreamLanguage } from '@codemirror/language'
+import { HighlightStyle, StreamLanguage, syntaxHighlighting } from '@codemirror/language'
 import { lua } from '@codemirror/legacy-modes/mode/lua'
+import { autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete'
+import { tags as t } from '@lezer/highlight'
+import { completeLua } from './luaCompletions'
 
-// Matches this app's dark palette (web/src/index.css's :root tokens) --
-// there's no light theme to also support, this app is dark-only.
+const luaLanguage = StreamLanguage.define(lua)
+
+// Colors picked for contrast against this app's dark palette (index.css's
+// :root tokens) -- CodeMirror's own default highlight style assumes a
+// light background and is hard to read here.
+const luaHighlightStyle = HighlightStyle.define([
+  { tag: t.comment, color: 'var(--text-faint)', fontStyle: 'italic' },
+  { tag: t.keyword, color: 'var(--accent-soft)', fontWeight: '600' },
+  { tag: [t.string, t.special(t.string)], color: '#7ee787' },
+  { tag: t.number, color: '#f0a35e' },
+  { tag: [t.bool, t.null], color: 'var(--accent-soft)' },
+  { tag: [t.function(t.variableName), t.function(t.propertyName), t.propertyName], color: '#79c0ff' },
+  { tag: t.variableName, color: 'var(--text)' },
+  { tag: [t.operator, t.punctuation, t.bracket], color: 'var(--text-dim)' },
+])
+
+// Matches this app's dark palette -- there's no light theme to also
+// support, this app is dark-only.
 const panelTheme = EditorView.theme(
   {
     '&': {
@@ -27,7 +46,21 @@ const panelTheme = EditorView.theme(
     '.cm-activeLineGutter': { backgroundColor: 'var(--surface-2)', color: 'var(--text-dim)' },
     '.cm-cursor': { borderLeftColor: 'var(--accent-soft)' },
     '&.cm-focused': { outline: 'none', borderColor: 'var(--accent-border)' },
+    // The scrollable element is .cm-scroller, but it only actually scrolls
+    // if .cm-editor (the "&" root) has a bounded height for it to overflow
+    // within -- setting the height on an outer wrapper div instead (as an
+    // earlier version of this file did) leaves .cm-editor free to grow to
+    // fit all its content, so there's nothing to scroll.
+    '&, .cm-scroller': { height: '100%' },
     '.cm-scroller': { overflow: 'auto' },
+    '.cm-tooltip-autocomplete': {
+      backgroundColor: 'var(--surface-2)',
+      border: '1px solid var(--border-strong)',
+    },
+    '.cm-tooltip-autocomplete ul li[aria-selected]': {
+      backgroundColor: 'var(--accent-bg)',
+      color: 'var(--text)',
+    },
   },
   { dark: true },
 )
@@ -56,8 +89,12 @@ export function ScriptEditor({ value, onChange, height = '360px', readOnly = fal
           highlightActiveLine(),
           highlightActiveLineGutter(),
           history(),
-          keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
-          StreamLanguage.define(lua),
+          closeBrackets(),
+          autocompletion(),
+          keymap.of([...closeBracketsKeymap, ...completionKeymap, ...defaultKeymap, ...historyKeymap, indentWithTab]),
+          luaLanguage,
+          luaLanguage.data.of({ autocomplete: completeLua }),
+          syntaxHighlighting(luaHighlightStyle),
           panelTheme,
           EditorView.editable.of(!readOnly),
           EditorView.updateListener.of((update) => {
@@ -91,5 +128,5 @@ export function ScriptEditor({ value, onChange, height = '360px', readOnly = fal
     view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: value } })
   }, [value])
 
-  return <div ref={containerRef} style={{ height, overflow: 'hidden' }} />
+  return <div ref={containerRef} style={{ height }} />
 }
