@@ -32,3 +32,8 @@ export function mediaRoute(serverId: string): string {
 export function stationRoute(serverId: string, slug: string): string {
   return `${serverRoute(serverId)}/stations/${encodeURIComponent(slug)}`
 }
+
+/** The in-app route for editing one panel-managed station. */
+export function stationEditRoute(serverId: string, slug: string): string {
+  return `${stationRoute(serverId, slug)}/edit`
+}

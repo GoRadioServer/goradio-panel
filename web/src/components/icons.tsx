@@ -187,3 +187,10 @@ export const IconMusicNote = (p: Props) => (
     <circle cx="17" cy="16" r="3" />
   </Svg>
 )
+
+export const IconPencil = (p: Props) => (
+  <Svg {...p}>
+    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19 3 20l1-4Z" />
+    <path d="M14.5 5.5 18 9" />
+  </Svg>
+)

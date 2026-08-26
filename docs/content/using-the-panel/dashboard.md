@@ -37,13 +37,13 @@ shell. The starter script registers the station and then plays silence
 (an empty playlist, same as GoRadio's own reference example) until it's
 edited.
 
-Manage that process from the station's [Controller
-section](stations.md#controller): edit the script in the built-in editor,
-save, and restart to apply changes, or start/stop it, or delete it
-entirely. A real, independently-run controller can still take over the
-same slug at any time — re-registering is always non-disruptive — but a
-station created here isn't waiting for one; it's running on its own from
-the moment it's created.
+Manage that process from its [edit
+page](stations.md#editing-a-panel-managed-station): edit the script in the
+built-in editor, save, and restart to apply changes, or start/stop it, or
+delete it entirely. A real, independently-run controller can still take
+over the same slug at any time — re-registering is always non-disruptive
+— but a station created here isn't waiting for one; it's running on its
+own from the moment it's created.
 
 ## Station cards
 
@@ -51,10 +51,15 @@ Each card shows the station's name, artwork (or a fallback), on-air/silence
 status, and current listener count. Clicking a card opens its
 [station page](stations.md).
 
+A panel-managed station's card also gets a pencil icon next to the
+chevron — click it to jump straight to that station's [edit
+page](stations.md#editing-a-panel-managed-station) without opening the
+live station page first.
+
 A panel-managed station that isn't currently registered gets a **Managed**
 chip and shows as offline instead of being left off the dashboard entirely
-— click through to its [Controller section](stations.md#controller) to see
-why (check the output, fix the script, Start/Restart).
+— click through (or use the pencil icon) to see why: check the output, fix
+the script, Start/Restart.
 
 ## No stations registered
 

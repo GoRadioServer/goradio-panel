@@ -265,6 +265,7 @@ function Breadcrumbs() {
 
   const station = stations?.find((s) => s.slug === slug)
   const onStation = Boolean(slug)
+  const onEdit = pathname.endsWith('/edit')
   const serverName = servers?.find((s) => s.id === serverId)?.name ?? serverId
   const label =
     pathname === '/users'
@@ -283,7 +284,15 @@ function Breadcrumbs() {
         <>
           <Link to={serverRoute(serverId)}>Stations</Link>
           <span className="crumb-sep">›</span>
-          <span className="crumb-current">{station?.name ?? slug}</span>
+          {onEdit ? (
+            <>
+              <Link to={stationRoute(serverId, slug!)}>{station?.name ?? slug}</Link>
+              <span className="crumb-sep">›</span>
+              <span className="crumb-current">Edit</span>
+            </>
+          ) : (
+            <span className="crumb-current">{station?.name ?? slug}</span>
+          )}
         </>
       ) : (
         <span className="crumb-current">{label}</span>

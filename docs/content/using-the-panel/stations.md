@@ -10,7 +10,7 @@ server lost track of it — the controller disconnected without a clean
 unregister) an "Unregistered" badge. Below that, chips for the station's
 slug and any metadata it carries.
 
-Three actions live here:
+Up to four actions live here:
 
 - **Queue track** — opens a form to queue a track by location (a path
   under the audio server's `audio_root`, or a URL for a live relay), with
@@ -23,17 +23,22 @@ Three actions live here:
   for what each mode does.
 - **Skip track** — ends the current track early and advances the queue,
   the same as the audio server's `Skip` RPC.
+- **Edit** — only shown for a station this panel created (see [Creating a
+  station](dashboard.md#creating-a-station)); opens its [edit
+  page](#editing-a-panel-managed-station). A station registered by an
+  external controller has no Edit button, since the panel isn't running
+  anything for it to manage.
 - **Unregister** — removes the station from the audio server's registry.
   A confirmation dialog warns that a live controller may just re-register
   it immediately; this is for clearing out a station whose controller has
   actually stopped, not a way to silence a running one.
 
-## Controller
+## Editing a panel-managed station
 
-Only shown for a station this panel created (see [Creating a
-station](dashboard.md#creating-a-station)) — a station registered by an
-external controller has no Controller section, since the panel isn't
-running anything for it to manage.
+Reached via the **Edit** button on a station's page, or the pencil icon on
+its [dashboard card](dashboard.md#station-cards) — a dedicated page,
+separate from the live station page above, for everything about the
+process itself rather than what it's currently playing:
 
 - A state badge: **Running**, **Stopped**, or **Crashed** (with the exit
   code and, where available, the error the process itself reported).
@@ -53,7 +58,8 @@ running anything for it to manage.
   where a Lua syntax error or a runtime error from the script shows up.
 - **Delete station** — stops the process, unregisters the station, and
   deletes its script. This is the only way to fully remove a
-  panel-managed station; it can't be undone.
+  panel-managed station; it can't be undone. Redirects back to the
+  dashboard once it's done.
 
 ## Stats row
 
@@ -84,12 +90,11 @@ Two lists side by side:
 
 ## What the panel doesn't do here
 
-For a station registered by an external controller (no Controller
-section), the station page is a control surface only — it can't create a
-station from nothing (that's what [creating a
-panel-managed station](dashboard.md#creating-a-station) is for) and it
-can't edit that controller's own logic (jingles, ad rotation, scheduling)
-— that lives in whatever script is driving it, outside the panel's
-reach. Platform integrations like
-[goradio-samp](https://goradioserver.github.io/goradio-samp/) are external
-controllers in this sense too.
+For a station registered by an external controller (no Edit button), the
+station page is a control surface only — it can't create a station from
+nothing (that's what [creating a panel-managed
+station](dashboard.md#creating-a-station) is for) and it can't edit that
+controller's own logic (jingles, ad rotation, scheduling) — that lives in
+whatever script is driving it, outside the panel's reach. Platform
+integrations like [goradio-samp](https://goradioserver.github.io/goradio-samp/)
+are external controllers in this sense too.

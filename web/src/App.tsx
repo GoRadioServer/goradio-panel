@@ -7,6 +7,7 @@ import { Shell } from './components/Shell'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { StationPage } from './pages/StationPage'
+import { EditStationPage } from './pages/EditStationPage'
 import { UsersPage } from './pages/UsersPage'
 import { TokensPage } from './pages/TokensPage'
 import { MediaPage } from './pages/MediaPage'
@@ -58,6 +59,7 @@ export default function App() {
 
               <Route path="/servers/:server" element={shell(<DashboardPage />)} />
               <Route path="/servers/:server/stations/:slug" element={shell(<StationPage />)} />
+              <Route path="/servers/:server/stations/:slug/edit" element={shell(<EditStationPage />)} />
               <Route path="/servers/:server/tokens" element={shell(<TokensPage />)} />
               <Route path="/servers/:server/media" element={shell(<MediaPage />)} />
 

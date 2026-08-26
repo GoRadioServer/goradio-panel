@@ -24,13 +24,21 @@ function StateBadge({ state }: { state: StationProcessState }) {
   return <span className="badge">Stopped</span>
 }
 
-// The Controller section of a station page -- only rendered for a
+// The Controller section of a station's edit page -- only rendered for a
 // panel-managed station (useStationProcess returns null for any other
 // kind, e.g. one registered by an external controller). Render with a
 // `key={slug}` from the caller so navigating between two managed
-// stations' pages remounts this and re-seeds the editor, rather than
+// stations' edit pages remounts this and re-seeds the editor, rather than
 // carrying stale content across.
-export function ControllerSection({ serverId, slug }: { serverId: string; slug: string }) {
+export function ControllerSection({
+  serverId,
+  slug,
+  onDeleted,
+}: {
+  serverId: string
+  slug: string
+  onDeleted?: () => void
+}) {
   const { data: process } = useStationProcess(serverId, slug)
   const { data: script } = useStationScript(serverId, slug)
   const saveScript = useSaveScript(serverId, slug)
@@ -113,7 +121,7 @@ export function ControllerSection({ serverId, slug }: { serverId: string; slug: 
                   `Delete managed station "${slug}"? This stops its process, unregisters it, and deletes its script. This can't be undone.`,
                 )
               ) {
-                deleteStation.mutate()
+                deleteStation.mutate(undefined, { onSuccess: onDeleted })
               }
             }}
           >

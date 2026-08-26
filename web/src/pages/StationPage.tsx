@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useStationStatus } from '../hooks/useStationStatus'
 import { useStationEvents } from '../hooks/useStationEvents'
 import { useListenerStats } from '../hooks/useListenerStats'
+import { useStationProcess } from '../hooks/useManagedStation'
 import { useClearQueue, useSkip, useUnregisterStation } from '../hooks/useStationMutations'
 import { formatUptime } from '../api/format'
 import { NowPlaying } from '../components/NowPlaying'
@@ -10,11 +11,11 @@ import { QueueList } from '../components/QueueList'
 import { QueueTrackForm } from '../components/QueueTrackForm'
 import { HistoryList } from '../components/HistoryList'
 import { ListenerChart } from '../components/ListenerChart'
-import { ControllerSection } from '../components/ControllerSection'
 import { Artwork } from '../components/Artwork'
 import { Modal } from '../components/Modal'
 import { useMeasuredHeight } from '../hooks/useMeasuredHeight'
-import { IconPlus, IconPower, IconSkip, IconTrash } from '../components/icons'
+import { IconPencil, IconPlus, IconPower, IconSkip, IconTrash } from '../components/icons'
+import { stationEditRoute } from '../api/paths'
 import { useServerId } from '../hooks/useServers'
 
 export function StationPage() {
@@ -22,6 +23,8 @@ export function StationPage() {
   const serverId = useServerId()
   const { data: status, isLoading, isError } = useStationStatus(serverId, slug)
   const { data: stats } = useListenerStats(serverId, slug)
+  const { data: process } = useStationProcess(serverId, slug)
+  const navigate = useNavigate()
   useStationEvents(serverId, slug)
 
   const skip = useSkip(serverId, slug)
@@ -85,6 +88,12 @@ export function StationPage() {
             <IconSkip size={14} />
             Skip track
           </button>
+          {process && (
+            <button className="secondary" onClick={() => navigate(stationEditRoute(serverId, slug))}>
+              <IconPencil size={14} />
+              Edit
+            </button>
+          )}
           <button
             className="danger"
             disabled={unregister.isPending}
@@ -125,8 +134,6 @@ export function StationPage() {
       </div>
 
       <div className="stack">
-        <ControllerSection key={slug} serverId={serverId} slug={slug} />
-
         <NowPlaying status={status} />
 
         <div className="card">

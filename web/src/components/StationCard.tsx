@@ -1,9 +1,9 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import type { StationSummary } from '../api/types'
 import { trackTitle } from '../api/format'
 import { Artwork } from './Artwork'
-import { IconChevron, IconUsers } from './icons'
-import { stationRoute } from '../api/paths'
+import { IconChevron, IconPencil, IconUsers } from './icons'
+import { stationEditRoute, stationRoute } from '../api/paths'
 import { useServerId } from '../hooks/useServers'
 
 export function StationCard({ station }: { station: StationSummary }) {
@@ -11,6 +11,7 @@ export function StationCard({ station }: { station: StationSummary }) {
   const metadata = Object.entries(station.metadata ?? {})
   const track = station.now_playing
   const serverId = useServerId()
+  const navigate = useNavigate()
 
   return (
     <Link className="station-card" to={stationRoute(serverId, station.slug)}>
@@ -20,6 +21,20 @@ export function StationCard({ station }: { station: StationSummary }) {
           <div className="station-card-name">{station.name}</div>
           <div className="row-sub mono">{station.slug}</div>
         </div>
+        {station.managed && (
+          <button
+            className="ghost sm"
+            title="Edit station"
+            aria-label="Edit station"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              navigate(stationEditRoute(serverId, station.slug))
+            }}
+          >
+            <IconPencil size={13} />
+          </button>
+        )}
         <IconChevron size={15} />
       </div>
 
