@@ -10,6 +10,7 @@ import { QueueList } from '../components/QueueList'
 import { QueueTrackForm } from '../components/QueueTrackForm'
 import { HistoryList } from '../components/HistoryList'
 import { ListenerChart } from '../components/ListenerChart'
+import { ControllerSection } from '../components/ControllerSection'
 import { Artwork } from '../components/Artwork'
 import { Modal } from '../components/Modal'
 import { useMeasuredHeight } from '../hooks/useMeasuredHeight'
@@ -121,6 +122,8 @@ export function StationPage() {
       </div>
 
       <div className="stack">
+        <ControllerSection key={slug} serverId={serverId} slug={slug} />
+
         <NowPlaying status={status} />
 
         <div className="card">

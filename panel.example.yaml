@@ -69,6 +69,20 @@ auth:
 db:
   sqlite_path: "./data/panel.db"
 
+station_runner:
+  # The `radio` executable a panel-managed station's process runs (`radio
+  # station --config ... --script ...`). Defaults to "radio", resolved via
+  # PATH -- the Docker image bundles one at /usr/local/bin/radio. For
+  # local dev without that image, point this at a `radio` binary you've
+  # built from the goradio repo. Overridable via
+  # PANEL_STATION_RUNNER_BINARY_PATH.
+  binary_path: "radio"
+  # Where each managed station's generated station.yaml/station.lua live,
+  # under <data_dir>/<server_id>/<slug>/. Should sit on the same
+  # persistent volume as db.sqlite_path. Overridable via
+  # PANEL_STATION_RUNNER_DATA_DIR.
+  data_dir: "./data/stations"
+
 bootstrap_admin:
   # Created only if the users table is empty at startup. Overridable via
   # PANEL_BOOTSTRAP_USERNAME / PANEL_BOOTSTRAP_PASSWORD.

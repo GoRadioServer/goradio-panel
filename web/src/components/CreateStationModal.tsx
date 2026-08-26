@@ -27,13 +27,11 @@ export function CreateStationModal({ serverId, onClose }: { serverId: string; on
   return (
     <Modal title="New station" onClose={onClose}>
       <div className="notice notice-warn" style={{ marginBottom: 14 }}>
-        This registers a station on the audio server directly — it has no
-        controller and no logic behind it. It won't queue anything on its
-        own; it just sits there until you (or anyone with a queue-capable
-        token) manually queue tracks, e.g. from the{' '}
-        <strong>Media Browser</strong>. If a real station controller
-        registers this same slug later, it takes over cleanly — this is
-        the same registration a controller itself would perform.
+        The panel writes a starter script and runs a real{' '}
+        <code>radio station</code> controller for it — it plays silence
+        until you add tracks. Edit the script from this station's{' '}
+        <strong>Controller</strong> section afterwards, then click{' '}
+        <strong>Restart</strong> to apply changes.
       </div>
 
       <form onSubmit={onSubmit}>

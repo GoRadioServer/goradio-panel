@@ -1,6 +1,8 @@
 # Holds /data: the SQLite database (user accounts + captured listener
-# stats). ReadWriteOnce because SQLite is a single-writer store -- see
-# deployment.yaml's comments on why this rules out multiple replicas.
+# stats) and, under /data/stations, panel-managed stations' generated
+# station.yaml/station.lua. ReadWriteOnce because SQLite is a
+# single-writer store -- see deployment.yaml's comments on why this rules
+# out multiple replicas.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

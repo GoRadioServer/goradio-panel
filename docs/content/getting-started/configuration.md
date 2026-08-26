@@ -97,6 +97,24 @@ db:
 
 Where the panel stores user accounts and captured listener stats.
 
+## `station_runner`
+
+```yaml
+station_runner:
+  binary_path: "radio"
+  data_dir: "./data/stations"
+```
+
+Controls how the panel runs `radio station` for [panel-managed
+stations](../using-the-panel/dashboard.md#creating-a-station).
+
+- `binary_path` — the `radio` executable to exec. Defaults to `"radio"`,
+  resolved via `PATH` — the Docker image bundles one at
+  `/usr/local/bin/radio` (see [Docker](../deployment/docker.md)).
+- `data_dir` — where each managed station's generated `station.yaml`/
+  `station.lua` live, under `<data_dir>/<server_id>/<slug>/`. Should sit
+  on the same persistent volume as `db.sqlite_path`.
+
 ## `bootstrap_admin`
 
 ```yaml
@@ -147,6 +165,8 @@ multi-server deployment needs the rest declared in the config file.
 | `GORADIO_JWT_SECRET` | `audioservers[0].jwt_secret` |
 | `PANEL_SESSION_JWT_SECRET` | `auth.session_jwt_secret` |
 | `PANEL_SQLITE_PATH` | `db.sqlite_path` |
+| `PANEL_STATION_RUNNER_BINARY_PATH` | `station_runner.binary_path` |
+| `PANEL_STATION_RUNNER_DATA_DIR` | `station_runner.data_dir` |
 | `PANEL_BOOTSTRAP_USERNAME` | `bootstrap_admin.username` |
 | `PANEL_BOOTSTRAP_PASSWORD` | `bootstrap_admin.password` |
 

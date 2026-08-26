@@ -16,3 +16,14 @@ CREATE TABLE IF NOT EXISTS listener_stats (
 -- predating the column this file runs BEFORE the ALTER TABLE that adds it,
 -- so an index over server_id here would fail on exactly the upgrade path
 -- it exists to serve. See migrateListenerStatsServerID.
+
+CREATE TABLE IF NOT EXISTS managed_stations (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  server_id       TEXT NOT NULL,
+  slug            TEXT NOT NULL,
+  name            TEXT NOT NULL,
+  desired_running INTEGER NOT NULL DEFAULT 1,
+  created_at      TIMESTAMP NOT NULL,
+  updated_at      TIMESTAMP NOT NULL,
+  UNIQUE (server_id, slug)
+);

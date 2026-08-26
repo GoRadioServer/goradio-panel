@@ -1,9 +1,7 @@
 package httpapi
 
 import (
-	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/goradioserver/goradio-panel/internal/audioclient"
 	"github.com/goradioserver/goradio-panel/internal/stats"
@@ -65,44 +63,6 @@ func stationStatusHandler(w http.ResponseWriter, r *http.Request, s serverScope)
 		return
 	}
 	writeProtoJSON(w, http.StatusOK, status)
-}
-
-type createStationRequest struct {
-	Slug        string `json:"slug"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	LogoURL     string `json:"logo_url"`
-}
-
-// createStationHandler registers a station directly from the panel --
-// with no controller behind it, so it plays nothing until something
-// queues a track (manually, from this panel, or from a script talking to
-// the audio server directly). A real controller can register the same
-// slug at any time afterwards and takes over cleanly; RegisterStation is
-// specced to update an existing station in place, not fail on it.
-func createStationHandler(w http.ResponseWriter, r *http.Request, s serverScope) {
-	var req createStationRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	slug := strings.TrimSpace(req.Slug)
-	if slug == "" {
-		http.Error(w, "slug is required", http.StatusBadRequest)
-		return
-	}
-	name := strings.TrimSpace(req.Name)
-	if name == "" {
-		name = slug
-	}
-
-	station, err := s.Client.RegisterStation(r.Context(), slug, name, strings.TrimSpace(req.Description), strings.TrimSpace(req.LogoURL))
-	if err != nil {
-		writeAudioClientError(w, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, station)
 }
 
 func unregisterStationHandler(w http.ResponseWriter, r *http.Request, s serverScope) {

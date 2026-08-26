@@ -99,9 +99,15 @@ docker run -d -p 8081:8081 \
 ```
 
 `/data` holds the SQLite database (user accounts + captured listener
-stats) -- mount a volume there for it to survive container restarts.
-`GET /healthz` is wired up for both Docker's own `HEALTHCHECK` and a k8s
-probe.
+stats) and, under `/data/stations`, panel-managed stations' generated
+`station.yaml`/`station.lua` -- mount a volume there for both to survive
+container restarts. `GET /healthz` is wired up for both Docker's own
+`HEALTHCHECK` and a k8s probe.
+
+The image also bundles a `radio` binary (pinned to a specific `goradio`
+release via the `Dockerfile`'s `GORADIO_VERSION` build arg) so the panel
+can run `radio station` for stations it creates -- see
+`internal/stationrunner`.
 
 ### Kubernetes
 

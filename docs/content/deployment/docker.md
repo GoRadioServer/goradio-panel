@@ -28,11 +28,23 @@ the API still working underneath.
 
 ## Persistent data
 
-`/data` holds the SQLite database — user accounts and captured listener
-stats. Mount a volume there, as above, for it to survive container
-restarts. `PANEL_SQLITE_PATH` (default `/data/panel.db` in the image)
-overrides where inside the container that file lives, if you need it
-somewhere else.
+`/data` holds the SQLite database (user accounts and captured listener
+stats) and, under `/data/stations`, every [panel-managed
+station](../using-the-panel/dashboard.md#creating-a-station)'s generated
+`station.yaml`/`station.lua`. Mount a volume there, as above, for both to
+survive container restarts. `PANEL_SQLITE_PATH` (default `/data/panel.db`)
+and `PANEL_STATION_RUNNER_DATA_DIR` (default `/data/stations`) override
+where inside the container each lives, if you need them somewhere else.
+
+## Running managed stations
+
+The image bundles a `radio` binary (`/usr/local/bin/radio`, pinned to a
+specific `goradio` release — see the `Dockerfile`'s `GORADIO_VERSION`
+build arg) purely so the panel can spawn `radio station` for stations
+created from its own UI. It's not a second server — nothing on the
+audio-serving side runs in this image; every managed station's process
+still just dials the `grpc_addr` you've configured, the same as any other
+controller.
 
 ## Health checks
 
@@ -47,7 +59,10 @@ cd goradio-panel
 docker build -t goradio-panel .
 ```
 
-The `Dockerfile` is a three-stage build: the frontend (`node:22-alpine`),
-the Go binary (`golang:1.27-alpine`, `CGO_ENABLED=0`), and a minimal
-`alpine:3.20` runtime image with just the compiled binary, the built
-`web/dist`, and `docker/panel.docker.yaml` baked in as the default config.
+The `Dockerfile` is a multi-stage build: the frontend (`node:22-alpine`),
+the Go binary (`golang:1.27-alpine`, `CGO_ENABLED=0`), the `radio` binary
+(pulled from a pinned `ghcr.io/goradioserver/goradio` image tag — override
+with `--build-arg GORADIO_VERSION=vX.Y.Z`), and a minimal `alpine:3.20`
+runtime image with the compiled panel binary, the bundled `radio` binary,
+the built `web/dist`, and `docker/panel.docker.yaml` baked in as the
+default config.

@@ -90,6 +90,18 @@ type Config struct {
 	Logging struct {
 		Level string `yaml:"level"`
 	} `yaml:"logging"`
+
+	StationRunner struct {
+		// BinaryPath is what the panel execs to run a managed station's
+		// controller -- "radio station --config ... --script ...". Defaults
+		// to "radio", resolved via PATH (the Docker image bundles one at
+		// /usr/local/bin/radio, alongside the panel binary itself).
+		BinaryPath string `yaml:"binary_path"`
+		// DataDir holds each managed station's generated station.yaml and
+		// station.lua, under <data_dir>/<server_id>/<slug>/. Should live on
+		// the same persistent volume as db.sqlite_path.
+		DataDir string `yaml:"data_dir"`
+	} `yaml:"station_runner"`
 }
 
 // Load reads and parses a Config from path, applies defaults, then applies
@@ -219,6 +231,12 @@ func (c *Config) applyDefaults() {
 	if c.Logging.Level == "" {
 		c.Logging.Level = "info"
 	}
+	if c.StationRunner.BinaryPath == "" {
+		c.StationRunner.BinaryPath = "radio"
+	}
+	if c.StationRunner.DataDir == "" {
+		c.StationRunner.DataDir = "./data/stations"
+	}
 }
 
 // applyEnvOverrides lets the whole config be driven by environment
@@ -270,5 +288,11 @@ func (c *Config) applyEnvOverrides() {
 	}
 	if v := os.Getenv("PANEL_BOOTSTRAP_PASSWORD"); v != "" {
 		c.BootstrapAdmin.Password = v
+	}
+	if v := os.Getenv("PANEL_STATION_RUNNER_BINARY_PATH"); v != "" {
+		c.StationRunner.BinaryPath = v
+	}
+	if v := os.Getenv("PANEL_STATION_RUNNER_DATA_DIR"); v != "" {
+		c.StationRunner.DataDir = v
 	}
 }

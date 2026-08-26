@@ -25,15 +25,22 @@ fresh browser lands on a sensible default instead of an ungrouped list.
 
 ## Creating a station
 
-The **New station** button registers a station directly on the audio
-server, the same way a controller's own `radio.register` call would —
-just a slug, a display name, and optionally a description and logo URL.
-It carries no controller and no logic: it won't queue anything on its own,
-so it plays nothing until a track is manually queued (from the
-[Media Browser](media.md) or a station page's queue form) or a real
-controller registers the same slug and takes over — which it can do at
-any time, cleanly, since re-registering an existing slug just updates it
-in place.
+The **New station** button creates a *panel-managed* station: fill in a
+slug, a display name, and optionally a description and logo URL, and the
+panel writes a starter Lua script and runs a real `radio station`
+controller process for it — the same binary and RPCs a hand-run
+controller uses, just started and supervised by the panel instead of a
+shell. The starter script registers the station and then plays silence
+(an empty playlist, same as GoRadio's own reference example) until it's
+edited.
+
+Manage that process from the station's [Controller
+section](stations.md#controller): edit the script in the built-in editor,
+save, and restart to apply changes, or start/stop it, or delete it
+entirely. A real, independently-run controller can still take over the
+same slug at any time — re-registering is always non-disruptive — but a
+station created here isn't waiting for one; it's running on its own from
+the moment it's created.
 
 ## Station cards
 

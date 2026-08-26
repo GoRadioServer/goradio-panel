@@ -23,6 +23,10 @@ auth:
 db:
   sqlite_path: "/data/panel.db" # PANEL_SQLITE_PATH
 
+station_runner:
+  binary_path: "radio" # PANEL_STATION_RUNNER_BINARY_PATH (bundled on PATH in this image)
+  data_dir: "/data/stations" # PANEL_STATION_RUNNER_DATA_DIR
+
 bootstrap_admin:
   username: "admin" # PANEL_BOOTSTRAP_USERNAME
   password: "" # PANEL_BOOTSTRAP_PASSWORD (required)

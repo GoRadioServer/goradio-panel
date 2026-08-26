@@ -17,6 +17,15 @@
 #     -v panel-data:/data \
 #     ghcr.io/goradioserver/goradio-panel
 
+# The `radio` binary a panel-managed station's process runs
+# (station_runner.binary_path, default "radio" on PATH -- see
+# internal/stationrunner). Pinned rather than :latest so a panel image
+# build is reproducible; bump this when goradio ships a station-relevant
+# feature the panel needs (e.g. a new Lua API function). Declared before
+# the first FROM so it can expand into the radio-bin stage's own FROM
+# below -- an ARG declared inside a stage is scoped to that stage only.
+ARG GORADIO_VERSION=v0.15.0
+
 FROM node:22-alpine AS web-build
 WORKDIR /src/web
 
@@ -35,11 +44,14 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /out/panel ./cmd/panel
 
+FROM ghcr.io/goradioserver/goradio:${GORADIO_VERSION} AS radio-bin
+
 FROM alpine:3.20
 RUN apk add --no-cache ca-certificates && \
     addgroup -g 1000 -S panel && adduser -u 1000 -S panel -G panel
 
 COPY --from=go-build /out/panel /usr/local/bin/panel
+COPY --from=radio-bin /usr/local/bin/radio /usr/local/bin/radio
 COPY --from=web-build /src/web/dist /app/web/dist
 COPY docker/panel.docker.yaml /app/panel.yaml
 
@@ -51,10 +63,12 @@ COPY docker/panel.docker.yaml /app/panel.yaml
 # serving the API only, and every page request 404s.
 ENV PANEL_STATIC_DIR="/app/web/dist"
 
-# db.sqlite_path (default /data/panel.db, see docker/panel.docker.yaml)
-# should point under here -- mount a volume for the SQLite database (user
-# accounts + captured listener stats) to persist across restarts.
-RUN mkdir -p /data && chown panel:panel /data
+# db.sqlite_path (default /data/panel.db) and station_runner.data_dir
+# (default /data/stations, see docker/panel.docker.yaml) both point under
+# here -- mount a volume for the SQLite database (user accounts + captured
+# listener stats) and managed stations' generated scripts to persist
+# across restarts.
+RUN mkdir -p /data/stations && chown -R panel:panel /data
 VOLUME ["/data"]
 
 WORKDIR /app

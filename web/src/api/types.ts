@@ -144,13 +144,24 @@ export interface CreateStationRequest {
   logo_url?: string
 }
 
-export interface CreateStationResponse {
+export type StationProcessState = 'running' | 'stopped' | 'crashed'
+
+// A panel-managed station's `radio station` process, as reported by
+// GET/POST .../process[/start|/stop|/restart]. Also what creating a
+// station returns, since creation spawns the process immediately.
+export interface StationProcess {
   slug: string
-  stream_url: string
-  // True if this slug was already registered (by a controller or a
-  // previous panel registration) and got updated in place rather than
-  // created fresh.
-  re_registered: boolean
+  name: string
+  state: StationProcessState
+  started_at?: string
+  stopped_at?: string
+  exit_code: number
+  exit_error?: string
+  log_tail: string[]
+}
+
+export interface StationScript {
+  content: string
 }
 
 export interface DirectoryEntry {

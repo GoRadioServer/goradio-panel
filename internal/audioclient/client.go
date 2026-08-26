@@ -26,6 +26,11 @@ type Client struct {
 	grpcClient  audioserverv1.AudioServerServiceClient
 	conn        *grpc.ClientConn
 	httpBaseURL string
+	// GRPCAddr is the raw address this client was dialed with (a bare
+	// "host:port" or a "https://"/"grpc://"-scheme URL) -- exposed so a
+	// panel-managed station's generated station.yaml can point at the same
+	// server.grpc_addr the panel itself uses, TLS scheme included.
+	GRPCAddr string
 
 	jwtSecret []byte
 	tokenTTL  time.Duration
@@ -79,6 +84,7 @@ func New(ctx context.Context, grpcAddr, httpBaseURL string, jwtSecret []byte, to
 		grpcClient:  audioserverv1.NewAudioServerServiceClient(conn),
 		conn:        conn,
 		httpBaseURL: strings.TrimRight(httpBaseURL, "/"),
+		GRPCAddr:    grpcAddr,
 		jwtSecret:   jwtSecret,
 		tokenTTL:    tokenTTL,
 	}

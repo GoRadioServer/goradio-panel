@@ -28,6 +28,33 @@ Three actions live here:
   it immediately; this is for clearing out a station whose controller has
   actually stopped, not a way to silence a running one.
 
+## Controller
+
+Only shown for a station this panel created (see [Creating a
+station](dashboard.md#creating-a-station)) — a station registered by an
+external controller has no Controller section, since the panel isn't
+running anything for it to manage.
+
+- A state badge: **Running**, **Stopped**, or **Crashed** (with the exit
+  code and, where available, the error the process itself reported).
+- **Start** / **Stop** / **Restart** — Stop sends the process a graceful
+  shutdown signal; it stays registered on the audio server (same as any
+  controller that drops its connection — see the "Unregistered" badge
+  above), it just isn't running. Starting or restarting mints the process
+  a fresh token every time, so nothing about its access ever goes stale
+  between restarts.
+- A built-in code editor over the station's Lua script, with a **Save**
+  button. Saving does **not** restart the process — review your change,
+  then click Restart when you're ready for it to take effect. Full
+  language reference: GoRadio's [Lua Scripting
+  API](https://goradioserver.github.io/goradio/lua-api/).
+- **Recent output** — the process's last ~500 lines of combined
+  stdout/stderr, refreshed on the same poll as the state badge. This is
+  where a Lua syntax error or a runtime error from the script shows up.
+- **Delete station** — stops the process, unregisters the station, and
+  deletes its script. This is the only way to fully remove a
+  panel-managed station; it can't be undone.
+
 ## Stats row
 
 Current listener count, items pending in the queue, and uptime since the
@@ -57,11 +84,12 @@ Two lists side by side:
 
 ## What the panel doesn't do here
 
-The station page is a control surface for a station a controller has
-already registered — it can't create a station from nothing (that's a
-station controller's job — see GoRadio's
-[Lua Scripting API](https://goradioserver.github.io/goradio/lua-api/) or a
-platform integration like
-[goradio-samp](https://goradioserver.github.io/goradio-samp/)), and it
-can't edit a station's own logic (jingles, ad rotation, scheduling) — that
-lives in whatever script is driving it.
+For a station registered by an external controller (no Controller
+section), the station page is a control surface only — it can't create a
+station from nothing (that's what [creating a
+panel-managed station](dashboard.md#creating-a-station) is for) and it
+can't edit that controller's own logic (jingles, ad rotation, scheduling)
+— that lives in whatever script is driving it, outside the panel's
+reach. Platform integrations like
+[goradio-samp](https://goradioserver.github.io/goradio-samp/) are external
+controllers in this sense too.

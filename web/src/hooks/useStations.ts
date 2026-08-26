@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiJSON } from '../api/client'
 import { apiPath } from '../api/paths'
-import type { CreateStationRequest, CreateStationResponse, StationSummary } from '../api/types'
+import type { CreateStationRequest, StationProcess, StationSummary } from '../api/types'
 
 export function useStations(serverId: string) {
   return useQuery({
@@ -15,16 +15,14 @@ export function useStations(serverId: string) {
   })
 }
 
-// Registers a station directly from the panel, with no controller behind
-// it. See CreateStationModal for the disclaimer shown alongside this --
-// the audio server has no logic of its own, so a panel-created station
-// only ever plays what's manually queued until a real controller
-// registers the same slug and takes over.
+// Creates a panel-managed station: the panel writes a starter Lua script
+// and spawns `radio station` for it immediately (see CreateStationModal
+// for the disclaimer shown alongside this).
 export function useCreateStation(serverId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (req: CreateStationRequest) =>
-      apiJSON<CreateStationResponse>(apiPath(serverId, '/stations'), {
+      apiJSON<StationProcess>(apiPath(serverId, '/stations'), {
         method: 'POST',
         body: JSON.stringify(req),
       }),

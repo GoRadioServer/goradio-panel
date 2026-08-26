@@ -15,6 +15,7 @@ import (
 
 	"github.com/goradioserver/goradio-panel/internal/audioclient"
 	"github.com/goradioserver/goradio-panel/internal/releases"
+	"github.com/goradioserver/goradio-panel/internal/stationrunner"
 	"github.com/goradioserver/goradio-panel/internal/stats"
 )
 
@@ -37,6 +38,9 @@ type Deps struct {
 	// bakes this in for a single-container deploy. Left empty for local
 	// dev, where the frontend runs separately via `npm run dev`.
 	StaticDir string
+	// Runner supervises `radio station` processes for panel-managed
+	// stations.
+	Runner *stationrunner.Runner
 }
 
 func NewRouter(sdb *sql.DB, deps Deps) http.Handler {
@@ -63,9 +67,17 @@ func NewRouter(sdb *sql.DB, deps Deps) http.Handler {
 	mux.HandleFunc("GET /api/servers/{server}/browse", scoped(browseHandler))
 
 	mux.HandleFunc("GET /api/servers/{server}/stations", scoped(stationsHandler))
-	mux.HandleFunc("POST /api/servers/{server}/stations", scoped(createStationHandler))
+	mux.HandleFunc("POST /api/servers/{server}/stations", scoped(createStationHandler(sdb, deps.Runner)))
 	mux.HandleFunc("GET /api/servers/{server}/stations/{slug}", scoped(stationStatusHandler))
 	mux.HandleFunc("POST /api/servers/{server}/stations/{slug}/unregister", scoped(unregisterStationHandler))
+	mux.HandleFunc("DELETE /api/servers/{server}/stations/{slug}", scoped(deleteStationHandler(sdb, deps.Runner)))
+
+	mux.HandleFunc("GET /api/servers/{server}/stations/{slug}/script", scoped(getScriptHandler(deps.Runner)))
+	mux.HandleFunc("PUT /api/servers/{server}/stations/{slug}/script", scoped(putScriptHandler(sdb, deps.Runner)))
+	mux.HandleFunc("GET /api/servers/{server}/stations/{slug}/process", scoped(getProcessHandler(sdb, deps.Runner)))
+	mux.HandleFunc("POST /api/servers/{server}/stations/{slug}/process/start", scoped(startProcessHandler(sdb, deps.Runner)))
+	mux.HandleFunc("POST /api/servers/{server}/stations/{slug}/process/stop", scoped(stopProcessHandler(sdb, deps.Runner)))
+	mux.HandleFunc("POST /api/servers/{server}/stations/{slug}/process/restart", scoped(restartProcessHandler(sdb, deps.Runner)))
 
 	mux.HandleFunc("POST /api/servers/{server}/stations/{slug}/queue", scoped(queueTrackHandler))
 	mux.HandleFunc("DELETE /api/servers/{server}/stations/{slug}/queue/{queueId}", scoped(removeFromQueueHandler))

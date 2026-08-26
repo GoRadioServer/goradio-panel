@@ -15,6 +15,7 @@ import (
 	"github.com/goradioserver/goradio-panel/internal/db"
 	"github.com/goradioserver/goradio-panel/internal/httpapi"
 	"github.com/goradioserver/goradio-panel/internal/releases"
+	"github.com/goradioserver/goradio-panel/internal/stationrunner"
 	"github.com/goradioserver/goradio-panel/internal/stats"
 )
 
@@ -81,6 +82,9 @@ func main() {
 		log.Info("update checks enabled", "repo", cfg.Updates.GitHubRepo, "interval", cfg.Updates.CheckInterval)
 	}
 
+	runner := stationrunner.New(cfg.StationRunner.BinaryPath, cfg.StationRunner.DataDir)
+	reconcileManagedStations(ctx, sdb, registry, runner, log)
+
 	deps := httpapi.Deps{
 		SessionJWTSecret: []byte(cfg.Auth.SessionJWTSecret),
 		SessionTTL:       cfg.Auth.SessionTTL,
@@ -90,6 +94,7 @@ func main() {
 		StatsStore:       statsStore,
 		Releases:         releaseChecker,
 		StaticDir:        cfg.HTTP.StaticDir,
+		Runner:           runner,
 	}
 	mux := httpapi.NewRouter(sdb, deps)
 
@@ -140,4 +145,37 @@ func bootstrapAdmin(ctx context.Context, sdb *sql.DB, cfg *config.Config, log *s
 
 	log.Warn("bootstrapped admin user (users table was empty)", "username", cfg.BootstrapAdmin.Username)
 	return nil
+}
+
+// reconcileManagedStations starts a process for every panel-managed
+// station whose desired_running flag survived from before this boot
+// (systemd-"enabled"-style intent) -- there's no supervisor tracking these
+// processes across a panel restart otherwise, since they're plain child
+// processes with no persistence of their own. A station that fails to
+// start here is logged and skipped rather than aborting startup: one
+// broken script shouldn't take the whole panel down.
+func reconcileManagedStations(ctx context.Context, sdb *sql.DB, registry *audioclient.Registry, runner *stationrunner.Runner, log *slog.Logger) {
+	for _, srv := range registry.All() {
+		managed, err := db.ListManagedStations(ctx, sdb, srv.ID)
+		if err != nil {
+			log.Error("list managed stations", "server", srv.ID, "error", err)
+			continue
+		}
+		for _, m := range managed {
+			if !m.DesiredRunning {
+				continue
+			}
+			jwt, err := srv.Client.MintStationToken([]string{m.Slug}, nil, "goradio-panel-managed:"+m.Slug, stationrunner.TokenTTL, false)
+			if err != nil {
+				log.Error("mint token for managed station", "server", srv.ID, "slug", m.Slug, "error", err)
+				continue
+			}
+			key := stationrunner.Key(srv.ID, m.Slug)
+			if err := runner.Start(key, runner.ConfigPath(srv.ID, m.Slug), runner.ScriptPath(srv.ID, m.Slug), jwt); err != nil {
+				log.Error("start managed station", "server", srv.ID, "slug", m.Slug, "error", err)
+				continue
+			}
+			log.Info("managed station started", "server", srv.ID, "slug", m.Slug)
+		}
+	}
 }
