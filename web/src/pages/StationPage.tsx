@@ -41,6 +41,9 @@ export function StationPage() {
       </div>
     )
   }
+  // GetStatus never 404s -- an unknown/never-registered slug still comes
+  // back 200 with is_registered: false (see the "Unregistered" badge
+  // below), so this only fires on a genuine failure (network, auth).
   if (isError || !status) return <p className="error-text">Failed to load station.</p>
 
   const listeners = Number(status.listener_count)

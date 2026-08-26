@@ -66,7 +66,7 @@ func NewRouter(sdb *sql.DB, deps Deps) http.Handler {
 	mux.HandleFunc("POST /api/servers/{server}/tokens", scoped(mintTokenHandler))
 	mux.HandleFunc("GET /api/servers/{server}/browse", scoped(browseHandler))
 
-	mux.HandleFunc("GET /api/servers/{server}/stations", scoped(stationsHandler))
+	mux.HandleFunc("GET /api/servers/{server}/stations", scoped(stationsHandler(sdb)))
 	mux.HandleFunc("POST /api/servers/{server}/stations", scoped(createStationHandler(sdb, deps.Runner)))
 	mux.HandleFunc("GET /api/servers/{server}/stations/{slug}", scoped(stationStatusHandler))
 	mux.HandleFunc("POST /api/servers/{server}/stations/{slug}/unregister", scoped(unregisterStationHandler))

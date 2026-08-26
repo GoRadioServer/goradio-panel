@@ -36,6 +36,12 @@ export interface StationSummary {
   // The station's current track, or null when nothing is playing. Shaped
   // like TrackSource so the same title/subtitle helpers apply.
   now_playing: TrackSource | null
+  // True if this panel created and runs a `radio station` process for
+  // this slug. A managed station that isn't currently registered (e.g.
+  // its process crashed before its first radio.register(), or it's
+  // stopped) still appears here -- offline will be true and there's no
+  // now_playing/listener data, but it's discoverable and clickable.
+  managed: boolean
 }
 
 export interface TrackSource {

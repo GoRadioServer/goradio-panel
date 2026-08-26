@@ -33,6 +33,11 @@ export function StationCard({ station }: { station: StationSummary }) {
             {value}
           </span>
         ))}
+        {station.managed && station.offline && (
+          <span className="chip" title="Created and run by this panel -- see its Controller section">
+            Managed
+          </span>
+        )}
       </div>
 
       {/* Current status, pinned to the bottom so it lines up across a row

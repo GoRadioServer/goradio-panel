@@ -1,7 +1,10 @@
 # Dashboard
 
 The dashboard is the panel's home page — every station currently
-registered on the selected audio server, as a grid of cards.
+registered on the selected audio server, plus every [panel-managed
+station](#creating-a-station) that isn't (its process may have crashed
+before its first successful registration, or been stopped), as a grid of
+cards.
 
 ## Stats row
 
@@ -47,6 +50,11 @@ the moment it's created.
 Each card shows the station's name, artwork (or a fallback), on-air/silence
 status, and current listener count. Clicking a card opens its
 [station page](stations.md).
+
+A panel-managed station that isn't currently registered gets a **Managed**
+chip and shows as offline instead of being left off the dashboard entirely
+— click through to its [Controller section](stations.md#controller) to see
+why (check the output, fix the script, Start/Restart).
 
 ## No stations registered
 
