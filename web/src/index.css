@@ -555,6 +555,7 @@ a.ns-version.update:hover {
 
 .page-actions {
   display: flex;
+  align-items: flex-end;
   gap: 8px;
   flex-wrap: wrap;
 }

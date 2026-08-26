@@ -69,7 +69,7 @@ export function DashboardPage() {
           )}
           <button type="button" onClick={() => setCreating(true)}>
             <IconPlus size={14} />
-            New station
+            Create Station
           </button>
         </div>
       </div>

@@ -25,7 +25,7 @@ fresh browser lands on a sensible default instead of an ungrouped list.
 
 ## Creating a station
 
-The **New station** button creates a *panel-managed* station: fill in a
+The **Create Station** button creates a *panel-managed* station: fill in a
 slug, a display name, and optionally a description and logo URL, and the
 panel writes a starter Lua script and runs a real `radio station`
 controller process for it — the same binary and RPCs a hand-run
